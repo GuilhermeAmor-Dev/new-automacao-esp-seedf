@@ -175,14 +175,26 @@ Diretor:
 - ✅ Estados de loading apropriados
 - ℹ️ Nota: Filtros aplicados em memória após fetch (aceitável para MVP, otimizar para SQL depois)
 
+#### Task 5: PDF e DOCX Export ✅ COMPLETA
+- ✅ **PDF Service** (pdfkit): Documento formatado com header institucional azul, todas as seções ESP, footer com timestamp
+- ✅ **DOCX Service** (docx): Documento Word editável com mesma estrutura do PDF
+- ✅ **Export Routes**: POST /api/export/pdf/:espId e POST /api/export/docx/:espId
+- ✅ **Frontend Handlers**: handleExportPDF e handleExportDOCX com blob download
+- ✅ **Toast Notifications**: Sucesso/erro apropriados
+- ✅ **Activity Logging**: EXPORTAR_PDF e EXPORTAR_DOCX registrados no banco
+- ✅ **RBAC Configurado**:
+  - **PDF**: Todos os perfis (ARQUITETO, CHEFE_DE_NUCLEO, GERENTE, DIRETOR)
+  - **DOCX**: Apenas DIRETOR
+- ✅ **Testes E2E**: Validados com ARQUITETO (PDF✅, DOCX❌) e DIRETOR (PDF✅, DOCX✅)
+- 💡 **Melhoria futura**: Esconder botão DOCX para não-DIRETOR para evitar toast de erro
+
 ### 🔄 Próximas Prioridades
 
 - [ ] Task 3: Sistema de upload de arquivos com persistência real
-- [ ] Task 5: Export PDF/DOCX (pdfkit + docx)
 - [ ] Task 7: RBAC enforcement (middleware + frontend checks)
 - [ ] Task 8: Password recovery flow
-- [ ] Correção: LSP errors no storage.ts (casting de enums)
 - [ ] Otimização: Mover filtros do dashboard para SQL queries
+- [ ] Melhoria: Esconder botão DOCX export para não-DIRETOR (UX)
 
 ## Tecnologias e Bibliotecas
 
@@ -209,8 +221,8 @@ Diretor:
 - JWT + bcrypt ✅
 - Zod (validation) ✅
 - Winston (logging) ✅
-- PDFKit (pendente - task 5)
-- docx (pendente - task 5)
+- PDFKit ✅ (task 5)
+- docx ✅ (task 5)
 - Swagger docs ✅ (/api/docs)
 
 ## Convenções de Código
