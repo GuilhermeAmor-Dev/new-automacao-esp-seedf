@@ -144,35 +144,45 @@ Diretor:
   Senha: Diretor123!
 ```
 
-## Próximos Passos (Backend - Task 2)
+## Estado Atual do Projeto
 
-### Pendências
-- [ ] Implementar endpoints da API
-- [ ] Configurar Prisma com SQLite
-- [ ] Configurar MongoDB GridFS para arquivos
-- [ ] Implementar autenticação JWT
-- [ ] Criar middleware RBAC
-- [ ] Implementar geração de PDF (pdfkit)
-- [ ] Implementar geração de DOCX (docx)
-- [ ] Criar seed com usuários de teste
-- [ ] Documentação Swagger (/api/docs)
+### ✅ Tasks Completadas
 
-## Estado Atual
+#### Task 1: PostgreSQL Database Migration
+- ✅ Migração completa de MemStorage para PostgreSQL
+- ✅ Drizzle ORM implementado e configurado
+- ✅ Todas operações CRUD funcionando com persistência
+- ✅ Delete operations compatíveis com Neon HTTP driver (.returning())
+- ✅ Seed idempotente com 4 usuários de teste
+- ✅ Enums corretamente tipados (Perfil, StatusCaderno, Selo, TipoArquivo)
 
-### ✅ Completado (Fase 1 - Frontend)
-- Schema de dados completo (shared/schema.ts)
-- Cores institucionais configuradas (index.css, tailwind.config.ts)
-- Todas as páginas públicas implementadas
-- Todas as páginas privadas implementadas
-- Componentes reutilizáveis criados
-- Interface de storage definida
-- Rotas configuradas
-- Design guidelines documentado
-- Acessibilidade WCAG AA
+#### Task 2: ESP Editor com 12 Abas
+- ✅ Editor completo com navegação por abas (Identificação, Projetos, Descrição, Execução, Fichas, Recebimento, Serviços, Critérios, Legislação, Anexos, Visualizar PDF, Exportar)
+- ✅ React Hook Form + Zod validation integrado
+- ✅ TanStack Query para data fetching
+- ✅ PATCH /api/esp/:id funcionando
+- ✅ Toast notifications implementadas
+- ✅ Tab routing sincronizado com URL
+- ⚠️ Questão conhecida: form initial population mostra placeholders (funcionalidade de save/edit funciona corretamente)
 
-### 🔄 Em Progresso
-- Task 2: Backend (API, autenticação, banco de dados)
-- Task 3: Integração frontend-backend
+#### Task 4: Dashboard com Filtros e Busca
+- ✅ Filtro de busca (codigo, titulo, tipologia, autor) - case-insensitive
+- ✅ Filtro por autor (nome do autor) - partial match
+- ✅ Filtro por data (data de publicação) - exact match
+- ✅ Filtro por status (baseado no status do caderno: OBSOLETO, EM_ANDAMENTO, APROVADO)
+- ✅ Botão "Aplicar Filtros" dispara nova query com params
+- ✅ Botão "Limpar Filtros" reseta todos os filtros
+- ✅ Estados de loading apropriados
+- ℹ️ Nota: Filtros aplicados em memória após fetch (aceitável para MVP, otimizar para SQL depois)
+
+### 🔄 Próximas Prioridades
+
+- [ ] Task 3: Sistema de upload de arquivos com persistência real
+- [ ] Task 5: Export PDF/DOCX (pdfkit + docx)
+- [ ] Task 7: RBAC enforcement (middleware + frontend checks)
+- [ ] Task 8: Password recovery flow
+- [ ] Correção: LSP errors no storage.ts (casting de enums)
+- [ ] Otimização: Mover filtros do dashboard para SQL queries
 
 ## Tecnologias e Bibliotecas
 
@@ -190,18 +200,18 @@ Diretor:
 - Sonner (toasts)
 - date-fns (date formatting)
 
-### Backend (a implementar)
-- Express
-- TypeScript
-- Prisma (ORM)
-- SQLite (dev) / PostgreSQL (prod)
-- MongoDB + GridFS
-- JWT + bcrypt
-- Zod (validation)
-- Winston (logging)
-- PDFKit (PDF generation)
-- docx (DOCX generation)
-- Swagger (API docs)
+### Backend
+- Express ✅
+- TypeScript ✅
+- Drizzle ORM ✅ (migrado de Prisma)
+- PostgreSQL (Neon) ✅
+- MongoDB + GridFS (pendente - task 3)
+- JWT + bcrypt ✅
+- Zod (validation) ✅
+- Winston (logging) ✅
+- PDFKit (pendente - task 5)
+- docx (pendente - task 5)
+- Swagger docs ✅ (/api/docs)
 
 ## Convenções de Código
 
