@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, FileText, CalendarIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, FileText, CalendarIcon, Loader2, Download, Trash2, File as FileIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -134,10 +134,19 @@ export default function EspEditor() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: EspFormData) => {
-      return await apiRequest(`/api/esp/${espId}`, {
+      const response = await fetch(`/api/esp/${espId}`, {
         method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao atualizar ESP");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/esp", espId] });
@@ -177,12 +186,130 @@ export default function EspEditor() {
     })();
   };
 
-  const handleFilesSelected = (files: File[]) => {
-    console.log("Files selected:", files);
-    toast({
-      title: "Arquivos selecionados",
-      description: `${files.length} arquivo(s) selecionado(s). Upload será implementado em breve.`,
-    });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+
+  // Fetch uploaded files for this ESP
+  const { data: filesData } = useQuery<{ files: any[] }>({
+    queryKey: ["/api/files", espId, "files"],
+    queryFn: async () => {
+      const response = await fetch(`/api/files/${espId}/files`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Erro ao carregar arquivos");
+      return response.json();
+    },
+    enabled: !!espId,
+  });
+
+  useEffect(() => {
+    if (filesData?.files) {
+      setUploadedFiles(filesData.files);
+    }
+  }, [filesData]);
+
+  const handleFilesSelected = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      if (espId) {
+        formData.append("espId", espId);
+      }
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const response = await fetch("/api/files/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao fazer upload");
+      }
+
+      const data = await response.json();
+
+      toast({
+        title: "Upload concluído",
+        description: `${data.files.length} arquivo(s) enviado(s) com sucesso.`,
+      });
+
+      // Refresh file list
+      queryClient.invalidateQueries({ queryKey: ["/api/files", espId, "files"] });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao fazer upload",
+        description: error.message || "Não foi possível enviar os arquivos",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string, filename: string) => {
+    try {
+      const response = await fetch(`/api/files/${fileId}/download`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Erro ao baixar arquivo");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Arquivo baixado",
+        description: `"${filename}" foi baixado com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao baixar",
+        description: "Não foi possível baixar o arquivo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string, filename: string) => {
+    if (!confirm(`Deseja realmente excluir "${filename}"?`)) return;
+
+    try {
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Erro ao deletar arquivo");
+
+      toast({
+        title: "Arquivo excluído",
+        description: `"${filename}" foi excluído com sucesso.`,
+      });
+
+      // Refresh file list
+      queryClient.invalidateQueries({ queryKey: ["/api/files", espId, "files"] });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o arquivo",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportPDF = async () => {
@@ -616,12 +743,67 @@ export default function EspEditor() {
                 <p className="text-muted-foreground">
                   Faça upload de arquivos anexos (imagens, PDF, DOCX)
                 </p>
-                <UploadDropzone onFilesSelected={handleFilesSelected} />
-                <div className="mt-6">
-                  <h2 className="text-lg font-semibold mb-3">Arquivos anexados</h2>
-                  <div className="border rounded-lg p-4 text-center text-muted-foreground">
-                    <p>Nenhum arquivo anexado ainda</p>
+                
+                {isUploading && (
+                  <div className="flex items-center gap-2 p-4 bg-institutional-blue/10 border border-institutional-blue rounded-lg">
+                    <Loader2 className="h-4 w-4 animate-spin text-institutional-blue" />
+                    <span className="text-sm text-institutional-blue">Fazendo upload...</span>
                   </div>
+                )}
+                
+                <UploadDropzone onFilesSelected={handleFilesSelected} />
+                
+                <div className="mt-6">
+                  <h2 className="text-lg font-semibold mb-3">Arquivos anexados ({uploadedFiles.length})</h2>
+                  {uploadedFiles.length === 0 ? (
+                    <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                      <FileIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhum arquivo anexado ainda</p>
+                      <p className="text-sm mt-1">Faça upload de arquivos usando a área acima</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-3 p-4 bg-card border rounded-lg hover:border-institutional-blue transition-colors"
+                          data-testid={`file-item-${file.id}`}
+                        >
+                          <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate" data-testid={`file-name-${file.id}`}>
+                              {file.filename}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {file.tipo} • {(file.fileSize / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadFile(file.id, file.filename)}
+                              data-testid={`button-download-${file.id}`}
+                              className="gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              Baixar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteFile(file.id, file.filename)}
+                              data-testid={`button-delete-${file.id}`}
+                              className="gap-2 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
