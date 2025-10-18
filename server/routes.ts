@@ -12,12 +12,12 @@ import { logger } from "./utils/logger";
 import { seedDatabase } from "./seed";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // IMPORTANT: cookie-parser must be registered in index.ts BEFORE this function
   // Middleware
   app.use(cors({
-    origin: ["http://localhost:5000", "http://localhost:3000"],
+    origin: true, // Allow all origins in development
     credentials: true,
   }));
-  app.use(cookieParser());
 
   // Seed database on startup
   try {
