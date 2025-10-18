@@ -10,8 +10,10 @@ import {
   type ArquivoMidia,
   type InsertArquivoMidia,
   type UserWithoutPassword,
+  Perfil,
   StatusCaderno,
   Selo,
+  TipoArquivo,
   users,
   cadernos,
   esps,
@@ -68,12 +70,12 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const now = new Date();
-    const values = {
+    const values: User = {
       id,
       nome: insertUser.nome,
       email: insertUser.email,
       hashSenha: insertUser.hashSenha,
-      perfil: insertUser.perfil,
+      perfil: insertUser.perfil as Perfil,
       ativo: insertUser.ativo ?? true,
       createdAt: now,
     };
@@ -112,11 +114,11 @@ export class DatabaseStorage implements IStorage {
   async createCaderno(insertCaderno: InsertCaderno): Promise<Caderno> {
     const id = randomUUID();
     const now = new Date();
-    const values = {
+    const values: Caderno = {
       id,
       titulo: insertCaderno.titulo,
       descricao: insertCaderno.descricao ?? null,
-      status: insertCaderno.status ?? StatusCaderno.EM_ANDAMENTO,
+      status: (insertCaderno.status ?? StatusCaderno.EM_ANDAMENTO) as StatusCaderno,
       autorId: insertCaderno.autorId,
       createdAt: now,
       updatedAt: now,
@@ -165,7 +167,7 @@ export class DatabaseStorage implements IStorage {
   async createEsp(insertEsp: InsertEsp): Promise<Esp> {
     const id = randomUUID();
     const now = new Date();
-    const values = {
+    const values: Esp = {
       id,
       codigo: insertEsp.codigo,
       titulo: insertEsp.titulo,
@@ -173,7 +175,7 @@ export class DatabaseStorage implements IStorage {
       revisao: insertEsp.revisao,
       dataPublicacao: insertEsp.dataPublicacao,
       autorId: insertEsp.autorId,
-      selo: insertEsp.selo ?? Selo.NENHUM,
+      selo: (insertEsp.selo ?? Selo.NENHUM) as Selo,
       cadernoId: insertEsp.cadernoId,
       visivel: insertEsp.visivel ?? true,
       descricaoAplicacao: insertEsp.descricaoAplicacao ?? null,
@@ -228,10 +230,10 @@ export class DatabaseStorage implements IStorage {
   async createArquivoMidia(insertArquivo: InsertArquivoMidia): Promise<ArquivoMidia> {
     const id = randomUUID();
     const now = new Date();
-    const values = {
+    const values: ArquivoMidia = {
       id,
       espId: insertArquivo.espId,
-      tipo: insertArquivo.tipo,
+      tipo: insertArquivo.tipo as TipoArquivo,
       filename: insertArquivo.filename,
       contentType: insertArquivo.contentType,
       fileIdMongo: insertArquivo.fileIdMongo,

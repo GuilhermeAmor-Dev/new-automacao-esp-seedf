@@ -34,7 +34,7 @@ export const Permissions = {
   deleteCaderno: [Perfil.GERENTE, Perfil.DIRETOR],
   
   // Export permissions
-  exportPdf: [Perfil.GERENTE, Perfil.DIRETOR],
+  exportPdf: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
   exportDocx: [Perfil.DIRETOR],
   
   // Logs permissions

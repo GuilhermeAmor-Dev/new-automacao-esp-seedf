@@ -217,6 +217,38 @@ export default function EspEditor() {
     }
   };
 
+  const handleExportDOCX = async () => {
+    try {
+      const response = await fetch(`/api/export/docx/${espId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (!response.ok) throw new Error("Erro ao exportar DOCX");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${esp?.codigo || "ESP"}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "DOCX exportado",
+        description: "O arquivo foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao exportar",
+        description: "Não foi possível exportar o DOCX",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -632,6 +664,7 @@ export default function EspEditor() {
                     </p>
                     <InstitutionalButton
                       variant="primary"
+                      onClick={handleExportDOCX}
                       data-testid="button-export-docx"
                     >
                       Exportar DOCX
