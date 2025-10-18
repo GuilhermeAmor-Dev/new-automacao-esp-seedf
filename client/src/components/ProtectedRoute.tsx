@@ -20,12 +20,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     // Always verify with backend (don't trust localStorage alone)
     try {
+      console.log("🔍 Checking auth... Cookies:", document.cookie);
       const response = await fetch("/api/auth/me", {
         credentials: "include",
       });
 
+      console.log("📡 Auth check response:", response.status);
+
       if (response.status === 401 || response.status === 403) {
         // Unauthorized - clear session and redirect
+        console.log("❌ Unauthorized - redirecting to login");
         clearAuthUser();
         setAuthState("redirecting");
         setTimeout(() => setLocation("/login"), 100);

@@ -34,6 +34,7 @@ export default function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      console.log("🔐 Attempting login...");
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,6 +44,10 @@ export default function Login() {
           senha: data.senha,
         }),
       });
+
+      console.log("📡 Login response status:", response.status);
+      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("🍪 All cookies after login:", document.cookie);
 
       const result = await response.json();
 
@@ -55,8 +60,10 @@ export default function Login() {
         localStorage.setItem("esp_auth_user", JSON.stringify(result.user));
       }
 
+      console.log("✅ Login successful, redirecting to /loading");
       setLocation("/loading");
     } catch (error: any) {
+      console.error("❌ Login error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
