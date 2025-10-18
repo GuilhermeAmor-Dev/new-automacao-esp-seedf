@@ -15,9 +15,19 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
+  // Filter states
   const [searchTerm, setSearchTerm] = useState("");
+  const [author, setAuthor] = useState("");
   const [status, setStatus] = useState<string>("");
   const [date, setDate] = useState<Date>();
+  
+  // Active filters (applied after clicking "Aplicar Filtros")
+  const [activeFilters, setActiveFilters] = useState({
+    search: "",
+    author: "",
+    status: "",
+    date: "",
+  });
   
   const [, setLocation] = useLocation();
   const user = JSON.parse(localStorage.getItem("esp_auth_user") || "{}");
@@ -35,11 +45,18 @@ export default function Dashboard() {
     enabled: !!user.id,
   });
 
-  // Fetch ESPs from API
+  // Fetch ESPs from API with filters
   const { data: espsData, isLoading: isLoadingESPs } = useQuery({
-    queryKey: ["/api/esp"],
+    queryKey: ["/api/esp", activeFilters],
     queryFn: async () => {
-      const response = await fetch("/api/esp", {
+      const params = new URLSearchParams();
+      if (activeFilters.search) params.append("search", activeFilters.search);
+      if (activeFilters.author) params.append("author", activeFilters.author);
+      if (activeFilters.status && activeFilters.status !== "all") params.append("status", activeFilters.status);
+      if (activeFilters.date) params.append("date", activeFilters.date);
+      
+      const url = `/api/esp${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await fetch(url, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch ESPs");
@@ -50,6 +67,30 @@ export default function Dashboard() {
 
   const cadernos = cadernosData?.cadernos || [];
   const esps = espsData?.esps || [];
+
+  // Apply filters
+  const handleApplyFilters = () => {
+    setActiveFilters({
+      search: searchTerm,
+      author,
+      status,
+      date: date ? date.toISOString() : "",
+    });
+  };
+
+  // Clear filters
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setAuthor("");
+    setStatus("");
+    setDate(undefined);
+    setActiveFilters({
+      search: "",
+      author: "",
+      status: "",
+      date: "",
+    });
+  };
 
   const handleLogout = async () => {
     try {
@@ -177,6 +218,8 @@ export default function Dashboard() {
                 id="author-filter"
                 type="text"
                 placeholder="Nome do autor"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
                 data-testid="input-author"
                 className="mt-1"
               />
@@ -204,9 +247,17 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={handleClearFilters}
+              data-testid="button-clear-filters"
+            >
+              Limpar Filtros
+            </Button>
             <InstitutionalButton
               variant="primary"
+              onClick={handleApplyFilters}
               data-testid="button-apply-filters"
             >
               Aplicar Filtros

@@ -37,7 +37,7 @@ const paramsSchema = z.object({
 // GET /api/esp
 router.get("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { cadernoId, visivel } = req.query;
+    const { cadernoId, visivel, search, date, author, status } = req.query;
     
     const esps = await storage.getEsps({
       cadernoId: cadernoId as string | undefined,
@@ -45,7 +45,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
     });
 
     // Get authors and cadernos for each ESP
-    const espsWithRelations = await Promise.all(
+    let espsWithRelations = await Promise.all(
       esps.map(async (esp) => {
         const [autor, caderno, arquivos] = await Promise.all([
           storage.getUserWithoutPassword(esp.autorId),
@@ -55,6 +55,47 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
         return { ...esp, autor, caderno, arquivos };
       })
     );
+
+    // Apply search filter
+    if (search && typeof search === "string") {
+      const searchLower = search.toLowerCase();
+      espsWithRelations = espsWithRelations.filter((esp) => {
+        return (
+          esp.codigo.toLowerCase().includes(searchLower) ||
+          esp.titulo.toLowerCase().includes(searchLower) ||
+          esp.tipologia.toLowerCase().includes(searchLower) ||
+          esp.autor?.nome.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply date filter
+    if (date && typeof date === "string") {
+      const filterDate = new Date(date);
+      espsWithRelations = espsWithRelations.filter((esp) => {
+        const espDate = new Date(esp.dataPublicacao);
+        return (
+          espDate.getFullYear() === filterDate.getFullYear() &&
+          espDate.getMonth() === filterDate.getMonth() &&
+          espDate.getDate() === filterDate.getDate()
+        );
+      });
+    }
+
+    // Apply author filter
+    if (author && typeof author === "string") {
+      const authorLower = author.toLowerCase();
+      espsWithRelations = espsWithRelations.filter((esp) => {
+        return esp.autor?.nome.toLowerCase().includes(authorLower);
+      });
+    }
+
+    // Apply status filter (based on caderno status)
+    if (status && typeof status === "string") {
+      espsWithRelations = espsWithRelations.filter((esp) => {
+        return esp.caderno?.status === status;
+      });
+    }
 
     res.json({ esps: espsWithRelations });
   } catch (error) {
