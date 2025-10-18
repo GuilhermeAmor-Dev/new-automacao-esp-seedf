@@ -47,6 +47,7 @@ export interface IStorage {
   
   // ArquivoMidia methods
   getArquivosMidiaByEsp(espId: string): Promise<ArquivoMidia[]>;
+  getArquivoMidiaById(id: string): Promise<ArquivoMidia | undefined>;
   createArquivoMidia(arquivo: InsertArquivoMidia): Promise<ArquivoMidia>;
   deleteArquivoMidia(id: string): Promise<boolean>;
   
@@ -236,11 +237,17 @@ export class DatabaseStorage implements IStorage {
       tipo: insertArquivo.tipo as TipoArquivo,
       filename: insertArquivo.filename,
       contentType: insertArquivo.contentType,
-      fileIdMongo: insertArquivo.fileIdMongo,
+      fileSize: insertArquivo.fileSize,
+      fileData: insertArquivo.fileData,
       createdAt: now,
     };
     await db.insert(arquivosMidia).values(values);
     return values;
+  }
+
+  async getArquivoMidiaById(id: string): Promise<ArquivoMidia | undefined> {
+    const result = await db.select().from(arquivosMidia).where(eq(arquivosMidia.id, id)).limit(1);
+    return result[0];
   }
 
   async deleteArquivoMidia(id: string): Promise<boolean> {

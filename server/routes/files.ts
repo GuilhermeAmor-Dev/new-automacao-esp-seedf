@@ -1,6 +1,5 @@
 import { Router } from "express";
 import multer from "multer";
-import { z } from "zod";
 import { storage } from "../storage";
 import { TipoArquivo } from "@shared/schema";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
@@ -9,7 +8,7 @@ import { logger } from "../utils/logger";
 
 const router = Router();
 
-// Configure multer for memory storage (simulating GridFS for MVP)
+// Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -30,9 +29,6 @@ const upload = multer({
     }
   },
 });
-
-// In-memory file store (simulating GridFS)
-const fileStore = new Map<string, { buffer: Buffer; contentType: string }>();
 
 // POST /api/files/upload
 router.post(
@@ -65,15 +61,6 @@ router.post(
       const uploadedFiles = [];
 
       for (const file of files) {
-        // Generate file ID (simulating MongoDB ObjectId)
-        const fileIdMongo = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        // Store file in memory (simulating GridFS)
-        fileStore.set(fileIdMongo, {
-          buffer: file.buffer,
-          contentType: file.mimetype,
-        });
-
         // Determine file type
         let tipo: TipoArquivo;
         if (file.mimetype.startsWith("image/")) {
@@ -84,16 +71,22 @@ router.post(
           tipo = TipoArquivo.DOCX;
         }
 
-        // Save file metadata to storage
+        // Convert file buffer to base64 for database storage
+        const fileData = file.buffer.toString('base64');
+
+        // Save file to database
         const arquivoMidia = await storage.createArquivoMidia({
           espId,
           tipo,
           filename: file.originalname,
           contentType: file.mimetype,
-          fileIdMongo,
+          fileSize: file.size,
+          fileData,
         });
 
-        uploadedFiles.push(arquivoMidia);
+        // Don't return fileData in response (too large)
+        const { fileData: _, ...fileResponse } = arquivoMidia;
+        uploadedFiles.push(fileResponse);
 
         await storage.createLog({
           userId: req.user.id,
@@ -117,44 +110,99 @@ router.post(
   }
 );
 
-// GET /api/files/:id/stream
-router.get("/:id/stream", authenticateToken, async (req: AuthRequest, res) => {
+// GET /api/esp/:espId/files - List files for an ESP
+router.get("/:espId/files", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const fileData = fileStore.get(req.params.id);
-    if (!fileData) {
+    const files = await storage.getArquivosMidiaByEsp(req.params.espId);
+    
+    // Don't return fileData in list (too large)
+    const filesResponse = files.map(({ fileData, ...file }) => file);
+    
+    res.json({ files: filesResponse });
+  } catch (error) {
+    logger.error("Error listing files", { error });
+    res.status(500).json({ error: "Erro ao listar arquivos" });
+  }
+});
+
+// GET /api/files/:id/download - Download a file
+router.get("/:id/download", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const arquivo = await storage.getArquivoMidiaById(req.params.id);
+    
+    if (!arquivo) {
       return res.status(404).json({ error: "Arquivo não encontrado" });
     }
 
-    res.setHeader("Content-Type", fileData.contentType);
-    res.send(fileData.buffer);
+    // Convert base64 back to buffer
+    const fileBuffer = Buffer.from(arquivo.fileData, 'base64');
+
+    res.setHeader("Content-Type", arquivo.contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
+    res.setHeader("Content-Length", fileBuffer.length);
+    res.send(fileBuffer);
+  } catch (error) {
+    logger.error("Error downloading file", { error });
+    res.status(500).json({ error: "Erro ao baixar arquivo" });
+  }
+});
+
+// GET /api/files/:id/stream - Stream a file (for preview)
+router.get("/:id/stream", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const arquivo = await storage.getArquivoMidiaById(req.params.id);
+    
+    if (!arquivo) {
+      return res.status(404).json({ error: "Arquivo não encontrado" });
+    }
+
+    // Convert base64 back to buffer
+    const fileBuffer = Buffer.from(arquivo.fileData, 'base64');
+
+    res.setHeader("Content-Type", arquivo.contentType);
+    res.setHeader("Content-Length", fileBuffer.length);
+    res.send(fileBuffer);
   } catch (error) {
     logger.error("Error streaming file", { error });
     res.status(500).json({ error: "Erro ao carregar arquivo" });
   }
 });
 
-// GET /api/files/:id/download
-router.get("/:id/download", authenticateToken, async (req: AuthRequest, res) => {
+// DELETE /api/files/:id - Delete a file
+router.delete("/:id", authenticateToken, requireRole(...Permissions.createEsp), async (req: AuthRequest, res) => {
   try {
-    // Find the arquivo metadata
-    const arquivos = Array.from(storage["arquivosMidia"].values());
-    const arquivo = arquivos.find(a => a.fileIdMongo === req.params.id);
+    if (!req.user) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    const arquivo = await storage.getArquivoMidiaById(req.params.id);
     
     if (!arquivo) {
       return res.status(404).json({ error: "Arquivo não encontrado" });
     }
 
-    const fileData = fileStore.get(req.params.id);
-    if (!fileData) {
-      return res.status(404).json({ error: "Arquivo não encontrado no storage" });
+    const deleted = await storage.deleteArquivoMidia(req.params.id);
+    
+    if (!deleted) {
+      return res.status(500).json({ error: "Erro ao deletar arquivo" });
     }
 
-    res.setHeader("Content-Type", fileData.contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
-    res.send(fileData.buffer);
+    await storage.createLog({
+      userId: req.user.id,
+      acao: "DELETE_ARQUIVO",
+      alvo: arquivo.espId,
+      detalhes: `Arquivo "${arquivo.filename}" deletado`,
+    });
+
+    logger.info("File deleted", { 
+      fileId: req.params.id, 
+      userId: req.user.id 
+    });
+
+    res.json({ success: true });
   } catch (error) {
-    logger.error("Error downloading file", { error });
-    res.status(500).json({ error: "Erro ao baixar arquivo" });
+    logger.error("Error deleting file", { error });
+    res.status(500).json({ error: "Erro ao deletar arquivo" });
   }
 });
 

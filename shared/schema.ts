@@ -122,7 +122,8 @@ export const arquivosMidia = pgTable("arquivos_midia", {
   tipo: text("tipo").notNull().$type<TipoArquivo>(),
   filename: text("filename").notNull(),
   contentType: text("content_type").notNull(),
-  fileIdMongo: text("file_id_mongo").notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileData: text("file_data").notNull(), // Base64-encoded file data
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
