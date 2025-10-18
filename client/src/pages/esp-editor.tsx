@@ -110,6 +110,7 @@ export default function EspEditor() {
   // Update form when ESP data loads
   useEffect(() => {
     if (esp) {
+      console.log("ESP data loaded, populating form:", esp);
       form.reset({
         codigo: esp.codigo || "",
         titulo: esp.titulo || "",
@@ -126,9 +127,9 @@ export default function EspEditor() {
         criteriosMedicao: esp.criteriosMedicao || "",
         legislacao: esp.legislacao || "",
         referencias: esp.referencias || "",
-      });
+      }, { keepDefaultValues: false });
     }
-  }, [esp, form]);
+  }, [esp]);
 
   // Update mutation
   const updateMutation = useMutation({
@@ -301,7 +302,8 @@ export default function EspEditor() {
                       data-testid="input-tipologia"
                       className="mt-1"
                       placeholder="Ex: Edificação"
-                      {...form.register("tipologia")}
+                      value={form.watch("tipologia") || ""}
+                      onChange={(e) => form.setValue("tipologia", e.target.value)}
                     />
                     {form.formState.errors.tipologia && (
                       <p className="text-sm text-destructive mt-1">
@@ -317,7 +319,8 @@ export default function EspEditor() {
                       data-testid="input-codigo"
                       className="mt-1"
                       placeholder="ESP-XXX"
-                      {...form.register("codigo")}
+                      value={form.watch("codigo") || ""}
+                      onChange={(e) => form.setValue("codigo", e.target.value)}
                     />
                     {form.formState.errors.codigo && (
                       <p className="text-sm text-destructive mt-1">
@@ -333,7 +336,8 @@ export default function EspEditor() {
                       data-testid="input-revisao"
                       className="mt-1"
                       placeholder="v1.0"
-                      {...form.register("revisao")}
+                      value={form.watch("revisao") || ""}
+                      onChange={(e) => form.setValue("revisao", e.target.value)}
                     />
                     {form.formState.errors.revisao && (
                       <p className="text-sm text-destructive mt-1">
@@ -427,7 +431,8 @@ export default function EspEditor() {
                     data-testid="input-titulo"
                     className="mt-1"
                     placeholder="Título da ESP"
-                    {...form.register("titulo")}
+                    value={form.watch("titulo") || ""}
+                    onChange={(e) => form.setValue("titulo", e.target.value)}
                   />
                   {form.formState.errors.titulo && (
                     <p className="text-sm text-destructive mt-1">

@@ -35,7 +35,21 @@ export default function Dashboard() {
     enabled: !!user.id,
   });
 
+  // Fetch ESPs from API
+  const { data: espsData, isLoading: isLoadingESPs } = useQuery({
+    queryKey: ["/api/esp"],
+    queryFn: async () => {
+      const response = await fetch("/api/esp", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch ESPs");
+      return response.json();
+    },
+    enabled: !!user.id,
+  });
+
   const cadernos = cadernosData?.cadernos || [];
+  const esps = espsData?.esps || [];
 
   const handleLogout = async () => {
     try {
@@ -200,7 +214,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Results Section */}
+        {/* Results Section - Cadernos */}
         {isLoadingCadernos ? (
           <div className="bg-card border rounded-lg p-12 text-center">
             <p className="text-muted-foreground">Carregando cadernos...</p>
@@ -243,9 +257,64 @@ export default function Dashboard() {
                         Autor: {caderno.autor?.nome} | Status: {caderno.status}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" data-testid={`button-view-caderno-${caderno.id}`}>
                       Ver Detalhes
                     </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Results Section - ESPs */}
+        {isLoadingESPs ? (
+          <div className="bg-card border rounded-lg p-12 text-center">
+            <p className="text-muted-foreground">Carregando ESPs...</p>
+          </div>
+        ) : esps.length === 0 ? (
+          <div className="bg-card border rounded-lg p-12 text-center">
+            <div className="max-w-md mx-auto space-y-4">
+              <FileText className="h-16 w-16 mx-auto text-muted-foreground" />
+              <h3 className="text-xl font-semibold">
+                Nenhuma ESP encontrada
+              </h3>
+              <p className="text-muted-foreground">
+                Comece criando sua primeira especificação
+              </p>
+              <Link href="/esp/novo">
+                <InstitutionalButton
+                  variant="primary"
+                  className="gap-2"
+                  data-testid="button-create-first-esp"
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar primeira ESP
+                </InstitutionalButton>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">{esps.length} ESP(s) Encontrada(s)</h3>
+            <div className="space-y-3">
+              {esps.map((esp: any) => (
+                <div key={esp.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{esp.codigo} - {esp.titulo}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Tipologia: {esp.tipologia} | Revisão: {esp.revisao}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Autor: {esp.autor?.nome}
+                      </p>
+                    </div>
+                    <Link href={`/esp/${esp.id}/identificacao`}>
+                      <Button variant="default" size="sm" data-testid={`button-edit-esp-${esp.id}`}>
+                        Editar
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               ))}
