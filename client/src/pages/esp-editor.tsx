@@ -526,7 +526,7 @@ export default function EspEditor() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="codigo">Código da ESP</Label>
+                    <Label htmlFor="codigo">ID do componente</Label>
                     <Input
                       id="codigo"
                       data-testid="input-codigo"
