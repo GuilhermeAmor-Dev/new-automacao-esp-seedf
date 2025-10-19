@@ -38,17 +38,25 @@ router.post(
   upload.array("files", 10),
   async (req: AuthRequest, res) => {
     try {
+      logger.info("Upload request received", {
+        body: req.body,
+        filesCount: req.files ? (req.files as Express.Multer.File[]).length : 0,
+        user: req.user?.id
+      });
+
       if (!req.user) {
         return res.status(401).json({ error: "Não autenticado" });
       }
 
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
+        logger.error("No files uploaded");
         return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
       const { espId } = req.body;
       if (!espId) {
+        logger.error("ESP ID missing from request body", { body: req.body });
         return res.status(400).json({ error: "ESP ID é obrigatório" });
       }
 
@@ -103,12 +111,31 @@ router.post(
       });
 
       res.status(201).json({ files: uploadedFiles });
-    } catch (error) {
-      logger.error("Error uploading files", { error });
-      res.status(500).json({ error: "Erro ao fazer upload de arquivos" });
+    } catch (error: any) {
+      logger.error("Error uploading files", { 
+        error: error.message,
+        stack: error.stack,
+        details: error 
+      });
+      res.status(500).json({ 
+        error: "Erro interno do servidor",
+        message: error.message || "Erro ao fazer upload de arquivos"
+      });
     }
   }
 );
+
+// Multer error handler
+router.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    logger.error("Multer error", { error: error.message, code: error.code });
+    return res.status(400).json({ error: error.message });
+  } else if (error) {
+    logger.error("File upload error", { error: error.message, stack: error.stack });
+    return res.status(500).json({ error: error.message || "Erro ao processar upload" });
+  }
+  next();
+});
 
 // GET /api/esp/:espId/files - List files for an ESP
 router.get("/:espId/files", authenticateToken, async (req: AuthRequest, res) => {

@@ -677,6 +677,7 @@ export default function EspEditor() {
                       onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/files", espId, "files"] })}
                       data-testid="button-refresh-projetos"
                       className="gap-2"
+                      disabled={isNewEsp}
                     >
                       <Loader2 className="h-4 w-4" />
                       Atualizar
@@ -686,12 +687,22 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       data-testid="button-open-pdf-projetos"
                       className="gap-2"
+                      disabled={isNewEsp}
                     >
                       <FileText className="h-4 w-4" />
                       Abrir PDF
                     </Button>
                   </div>
                 </div>
+
+                {/* Aviso para ESP nova */}
+                {isNewEsp && (
+                  <div className="mb-6 p-4 bg-institutional-yellow/20 border border-institutional-yellow rounded-lg">
+                    <p className="text-sm text-black font-medium">
+                      ⚠️ Salve a ESP primeiro na aba "Identificação" antes de fazer upload de arquivos de projeto.
+                    </p>
+                  </div>
+                )}
 
                 {/* Área de upload customizada */}
                 <div className="flex-1 space-y-6">
@@ -703,37 +714,47 @@ export default function EspEditor() {
                   {/* Dropzone customizada */}
                   <div
                     onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add("ring-4", "ring-institutional-yellow");
+                      if (!isNewEsp) {
+                        e.preventDefault();
+                        e.currentTarget.classList.add("ring-4", "ring-institutional-yellow");
+                      }
                     }}
                     onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove("ring-4", "ring-institutional-yellow");
+                      if (!isNewEsp) {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove("ring-4", "ring-institutional-yellow");
+                      }
                     }}
                     onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove("ring-4", "ring-institutional-yellow");
-                      const files = Array.from(e.dataTransfer.files);
-                      handleFilesSelected(files);
+                      if (!isNewEsp) {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove("ring-4", "ring-institutional-yellow");
+                        const files = Array.from(e.dataTransfer.files);
+                        handleFilesSelected(files);
+                      }
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                      if (!isNewEsp && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
                         document.getElementById('file-upload-projetos')?.click();
                       }
                     }}
-                    className="relative rounded-lg transition-all focus-within:ring-4 focus-within:ring-institutional-yellow"
+                    className={cn(
+                      "relative rounded-lg transition-all",
+                      !isNewEsp && "focus-within:ring-4 focus-within:ring-institutional-yellow"
+                    )}
                     data-testid="upload-area-projetos"
                     role="button"
-                    tabIndex={0}
+                    tabIndex={isNewEsp ? -1 : 0}
                     aria-label="Área de upload. Clique para selecionar arquivos de projeto."
+                    aria-disabled={isNewEsp}
                   >
                     <input
                       type="file"
                       accept="image/*,.pdf,.docx"
                       multiple
                       onChange={(e) => {
-                        if (e.target.files) {
+                        if (!isNewEsp && e.target.files) {
                           const files = Array.from(e.target.files);
                           handleFilesSelected(files);
                         }
@@ -742,11 +763,15 @@ export default function EspEditor() {
                       id="file-upload-projetos"
                       data-testid="input-file-projetos"
                       aria-label="Selecionar arquivos de projeto"
+                      disabled={isNewEsp}
                     />
                     
                     <label
                       htmlFor="file-upload-projetos"
-                      className="cursor-pointer block bg-institutional-blue rounded-lg p-12 text-center"
+                      className={cn(
+                        "block rounded-lg p-12 text-center",
+                        isNewEsp ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                      )}
                       style={{ backgroundColor: "#0361ad" }}
                     >
                       <div className="flex flex-col items-center gap-4">
