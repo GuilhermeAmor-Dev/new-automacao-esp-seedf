@@ -20,6 +20,8 @@ import {
   type InsertPrototipoComercial,
   type Aplicacao,
   type InsertAplicacao,
+  type FichaRecebimento,
+  type InsertFichaRecebimento,
   Perfil,
   StatusCaderno,
   Selo,
@@ -34,6 +36,7 @@ import {
   acabamentos,
   prototiposComerciais,
   aplicacoes,
+  fichasRecebimento,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -90,6 +93,10 @@ export interface IStorage {
   getAplicacoes(): Promise<Aplicacao[]>;
   getAplicacaoByNome(nome: string): Promise<Aplicacao | undefined>;
   createAplicacao(aplicacao: InsertAplicacao): Promise<Aplicacao>;
+  
+  getFichasRecebimento(): Promise<FichaRecebimento[]>;
+  getFichaRecebimentoByNome(nome: string): Promise<FichaRecebimento | undefined>;
+  createFichaRecebimento(ficha: InsertFichaRecebimento): Promise<FichaRecebimento>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -223,6 +230,15 @@ export class DatabaseStorage implements IStorage {
       criteriosMedicao: insertEsp.criteriosMedicao ?? null,
       legislacao: insertEsp.legislacao ?? null,
       referencias: insertEsp.referencias ?? null,
+      introduzirComponente: insertEsp.introduzirComponente ?? null,
+      constituentesIds: insertEsp.constituentesIds ?? null,
+      acessoriosIds: insertEsp.acessoriosIds ?? null,
+      acabamentosIds: insertEsp.acabamentosIds ?? null,
+      prototiposIds: insertEsp.prototiposIds ?? null,
+      aplicacoesIds: insertEsp.aplicacoesIds ?? null,
+      constituintesExecucaoIds: insertEsp.constituintesExecucaoIds ?? null,
+      fichasReferenciaIds: insertEsp.fichasReferenciaIds ?? null,
+      fichasRecebimentoIds: insertEsp.fichasRecebimentoIds ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -249,6 +265,15 @@ export class DatabaseStorage implements IStorage {
     if (updates.criteriosMedicao !== undefined) updateData.criteriosMedicao = updates.criteriosMedicao;
     if (updates.legislacao !== undefined) updateData.legislacao = updates.legislacao;
     if (updates.referencias !== undefined) updateData.referencias = updates.referencias;
+    if (updates.introduzirComponente !== undefined) updateData.introduzirComponente = updates.introduzirComponente;
+    if (updates.constituentesIds !== undefined) updateData.constituentesIds = updates.constituentesIds;
+    if (updates.acessoriosIds !== undefined) updateData.acessoriosIds = updates.acessoriosIds;
+    if (updates.acabamentosIds !== undefined) updateData.acabamentosIds = updates.acabamentosIds;
+    if (updates.prototiposIds !== undefined) updateData.prototiposIds = updates.prototiposIds;
+    if (updates.aplicacoesIds !== undefined) updateData.aplicacoesIds = updates.aplicacoesIds;
+    if (updates.constituintesExecucaoIds !== undefined) updateData.constituintesExecucaoIds = updates.constituintesExecucaoIds;
+    if (updates.fichasReferenciaIds !== undefined) updateData.fichasReferenciaIds = updates.fichasReferenciaIds;
+    if (updates.fichasRecebimentoIds !== undefined) updateData.fichasRecebimentoIds = updates.fichasRecebimentoIds;
     
     await db.update(esps).set(updateData).where(eq(esps.id, id));
     return this.getEsp(id);
@@ -429,6 +454,29 @@ export class DatabaseStorage implements IStorage {
       createdAt: now,
     };
     await db.insert(aplicacoes).values(values);
+    return values;
+  }
+
+  async getFichasRecebimento(): Promise<FichaRecebimento[]> {
+    return await db.select().from(fichasRecebimento).where(eq(fichasRecebimento.ativo, true));
+  }
+
+  async getFichaRecebimentoByNome(nome: string): Promise<FichaRecebimento | undefined> {
+    const result = await db.select().from(fichasRecebimento).where(eq(fichasRecebimento.nome, nome)).limit(1);
+    return result[0];
+  }
+
+  async createFichaRecebimento(insertFicha: InsertFichaRecebimento): Promise<FichaRecebimento> {
+    const id = randomUUID();
+    const now = new Date();
+    const values: FichaRecebimento = {
+      id,
+      nome: insertFicha.nome,
+      descricao: insertFicha.descricao ?? null,
+      ativo: insertFicha.ativo ?? true,
+      createdAt: now,
+    };
+    await db.insert(fichasRecebimento).values(values);
     return values;
   }
 }

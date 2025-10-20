@@ -165,6 +165,27 @@ export async function seedDatabase() {
       }
     }
 
+    // Fichas de Recebimento
+    const fichasRecebimentoData = [
+      { nome: "Ficha de Recebimento de Materiais Hidráulicos", descricao: "Verificação de conformidade de materiais hidráulicos" },
+      { nome: "Ficha de Conferência Elétrica", descricao: "Inspeção de materiais e instalações elétricas" },
+      { nome: "Ficha de Recebimento de Estruturas Metálicas", descricao: "Controle de qualidade de estruturas metálicas" },
+      { nome: "Ficha de Inspeção de Alvenaria", descricao: "Verificação de blocos e execução de alvenaria" },
+      { nome: "Ficha de Recebimento de Revestimentos", descricao: "Controle de materiais de revestimento cerâmico e porcelanato" },
+      { nome: "Ficha de Conferência de Pintura", descricao: "Inspeção de tintas e execução de pintura" },
+      { nome: "Ficha de Recebimento de Materiais Estruturais", descricao: "Verificação de concreto, aço e outros materiais estruturais" },
+    ];
+
+    for (const data of fichasRecebimentoData) {
+      const existing = await storage.getFichaRecebimentoByNome(data.nome);
+      if (!existing) {
+        await storage.createFichaRecebimento(data);
+        logger.info(`Ficha de Recebimento created: ${data.nome}`);
+      } else {
+        logger.info(`Ficha de Recebimento already exists: ${data.nome}`);
+      }
+    }
+
     // Create 1 Caderno (check if exists first)
     const allCadernos = await storage.getCadernos();
     let caderno = allCadernos.find(c => c.titulo === "Caderno de Especificações - Edificações 2025");

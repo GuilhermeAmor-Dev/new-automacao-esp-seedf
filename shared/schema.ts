@@ -147,6 +147,23 @@ export const insertAplicacaoSchema = createInsertSchema(aplicacoes).omit({
 export type InsertAplicacao = z.infer<typeof insertAplicacaoSchema>;
 export type Aplicacao = typeof aplicacoes.$inferSelect;
 
+// Fichas de Recebimento catalog
+export const fichasRecebimento = pgTable("fichas_recebimento", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  nome: text("nome").notNull(), // ex: "Ficha de Recebimento de Materiais Hidráulicos", "Ficha de Conferência Elétrica"
+  descricao: text("descricao"), // Descrição opcional da ficha
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFichaRecebimentoSchema = createInsertSchema(fichasRecebimento).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFichaRecebimento = z.infer<typeof insertFichaRecebimentoSchema>;
+export type FichaRecebimento = typeof fichasRecebimento.$inferSelect;
+
 // ESP model
 export const esps = pgTable("esps", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -179,6 +196,8 @@ export const esps = pgTable("esps", {
   constituintesExecucaoIds: text("constituintes_execucao_ids").array(), // Array de IDs de constituintes para execução
   // Novos campos para Fichas de Referência
   fichasReferenciaIds: text("fichas_referencia_ids").array(), // Array de IDs de itens relacionados (de qualquer catálogo)
+  // Novos campos para Recebimento
+  fichasRecebimentoIds: text("fichas_recebimento_ids").array(), // Array de IDs de fichas de recebimento
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -54,4 +54,14 @@ router.get("/aplicacoes", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// GET /api/catalog/fichas-recebimento - List all fichas de recebimento
+router.get("/fichas-recebimento", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const fichasRecebimento = await storage.getFichasRecebimento();
+    res.json({ fichasRecebimento });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao listar fichas de recebimento" });
+  }
+});
+
 export default router;
