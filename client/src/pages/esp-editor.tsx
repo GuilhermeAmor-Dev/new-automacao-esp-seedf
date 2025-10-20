@@ -56,6 +56,12 @@ const espFormSchema = z.object({
   criteriosMedicao: z.string().optional(),
   legislacao: z.string().optional(),
   referencias: z.string().optional(),
+  introduzirComponente: z.string().optional(),
+  constituentesIds: z.array(z.string()).optional(),
+  acessoriosIds: z.array(z.string()).optional(),
+  acabamentosIds: z.array(z.string()).optional(),
+  prototiposIds: z.array(z.string()).optional(),
+  aplicacoesIds: z.array(z.string()).optional(),
 });
 
 type EspFormData = z.infer<typeof espFormSchema>;
@@ -125,6 +131,12 @@ export default function EspEditor() {
       criteriosMedicao: "",
       legislacao: "",
       referencias: "",
+      introduzirComponente: "",
+      constituentesIds: [],
+      acessoriosIds: [],
+      acabamentosIds: [],
+      prototiposIds: [],
+      aplicacoesIds: [],
     },
   });
 
@@ -148,6 +160,12 @@ export default function EspEditor() {
         criteriosMedicao: esp.criteriosMedicao || "",
         legislacao: esp.legislacao || "",
         referencias: esp.referencias || "",
+        introduzirComponente: esp.introduzirComponente || "",
+        constituentesIds: esp.constituentesIds || [],
+        acessoriosIds: esp.acessoriosIds || [],
+        acabamentosIds: esp.acabamentosIds || [],
+        prototiposIds: esp.prototiposIds || [],
+        aplicacoesIds: esp.aplicacoesIds || [],
       }, { keepDefaultValues: false });
     }
   }, [esp]);
@@ -855,17 +873,194 @@ export default function EspEditor() {
             )}
 
             {activeTab === "descricao" && (
-              <div className="max-w-4xl space-y-6">
-                <h1 className="text-2xl font-bold">Descrição e Aplicação</h1>
-                <div>
-                  <Label htmlFor="descricao-aplicacao">Conteúdo</Label>
-                  <Textarea
-                    id="descricao-aplicacao"
-                    data-testid="textarea-descricao"
-                    className="mt-1 min-h-[300px]"
-                    placeholder="Descreva a aplicação da especificação..."
-                    {...form.register("descricaoAplicacao")}
-                  />
+              <div className="h-full flex flex-col">
+                {/* Header com botões de ação */}
+                <div className="flex items-center justify-between mb-6">
+                  <h1 className="text-2xl font-bold text-black">Descrição e Aplicação</h1>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleSave}
+                      disabled={updateMutation.isPending}
+                      data-testid="button-save-descricao"
+                      className="gap-2 border-black text-black hover:bg-black hover:text-white"
+                    >
+                      <Save className="h-4 w-4" />
+                      Salvar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        // Recarregar dados da ESP
+                        queryClient.invalidateQueries({ queryKey: ["/api/esp", espId] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/catalog/constituintes"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/catalog/acessorios"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/catalog/acabamentos"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/catalog/prototipos"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/catalog/aplicacoes"] });
+                        toast({ title: "Dados atualizados" });
+                      }}
+                      data-testid="button-refresh-descricao"
+                      className="gap-2 border-black text-black hover:bg-black hover:text-white"
+                    >
+                      <Loader2 className="h-4 w-4" />
+                      Atualizar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleExportPDF}
+                      disabled={isNewEsp}
+                      data-testid="button-open-pdf-descricao"
+                      className="gap-2 border-black text-black hover:bg-black hover:text-white"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Abrir PDF
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Área principal do formulário com scroll */}
+                <div className="flex-1 overflow-auto max-w-4xl space-y-6 pr-4">
+                  {/* Campo: Introduzir componente */}
+                  <div>
+                    <Label htmlFor="introduzir-componente" className="text-black">
+                      Introduzir componente
+                    </Label>
+                    <Input
+                      id="introduzir-componente"
+                      data-testid="input-introduzir-componente"
+                      className="mt-1 bg-white text-black border-gray-300"
+                      placeholder="Descreva o componente..."
+                      aria-label="Campo de texto. Introduza o componente."
+                      {...form.register("introduzirComponente")}
+                    />
+                  </div>
+
+                  {/* Select Box: Constituintes */}
+                  <div>
+                    <Label htmlFor="constituintes" className="text-black">
+                      Constituintes
+                    </Label>
+                    <Select
+                      defaultValue=""
+                      onValueChange={(value) => {
+                        // TODO: Handle multi-select (store in array)
+                        console.log("Constituinte selected:", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="constituintes"
+                        data-testid="select-constituintes"
+                        className="mt-1 bg-white text-black border-gray-300"
+                        aria-label="Campo de seleção. Escolha os constituintes do componente."
+                      >
+                        <SelectValue placeholder="Escolha os constituintes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="temp-loading">Carregando...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Select Box: Acessórios */}
+                  <div>
+                    <Label htmlFor="acessorios" className="text-black">
+                      Acessórios
+                    </Label>
+                    <Select
+                      defaultValue=""
+                      onValueChange={(value) => {
+                        console.log("Acessório selected:", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="acessorios"
+                        data-testid="select-acessorios"
+                        className="mt-1 bg-white text-black border-gray-300"
+                        aria-label="Campo de seleção. Escolha os acessórios."
+                      >
+                        <SelectValue placeholder="Escolha os acessórios" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="temp-loading">Carregando...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Select Box: Acabamentos */}
+                  <div>
+                    <Label htmlFor="acabamentos" className="text-black">
+                      Acabamentos
+                    </Label>
+                    <Select
+                      defaultValue=""
+                      onValueChange={(value) => {
+                        console.log("Acabamento selected:", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="acabamentos"
+                        data-testid="select-acabamentos"
+                        className="mt-1 bg-white text-black border-gray-300"
+                        aria-label="Campo de seleção. Escolha o tipo de acabamento."
+                      >
+                        <SelectValue placeholder="Escolha o acabamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="temp-loading">Carregando...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Select Box: Protótipo Comercial */}
+                  <div>
+                    <Label htmlFor="prototipo-comercial" className="text-black">
+                      Protótipo Comercial
+                    </Label>
+                    <Select
+                      defaultValue=""
+                      onValueChange={(value) => {
+                        console.log("Protótipo comercial selected:", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="prototipo-comercial"
+                        data-testid="select-prototipo-comercial"
+                        className="mt-1 bg-white text-black border-gray-300"
+                        aria-label="Campo de seleção. Escolha o protótipo comercial."
+                      >
+                        <SelectValue placeholder="Escolha o protótipo comercial" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="temp-loading">Carregando...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Select Box: Aplicações */}
+                  <div>
+                    <Label htmlFor="aplicacoes" className="text-black">
+                      Aplicações
+                    </Label>
+                    <Select
+                      defaultValue=""
+                      onValueChange={(value) => {
+                        console.log("Aplicação selected:", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="aplicacoes"
+                        data-testid="select-aplicacoes"
+                        className="mt-1 bg-white text-black border-gray-300"
+                        aria-label="Campo de seleção. Escolha a aplicação do componente."
+                      >
+                        <SelectValue placeholder="Escolha a aplicação" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="temp-loading">Carregando...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             )}
