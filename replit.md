@@ -21,7 +21,7 @@ The design adheres strictly to the official SEEDF visual identity, utilizing a t
 -   **Data Models:**
     -   **User:** Manages various profiles (ARQUITETO, CHEFE_DE_NUCLEO, GERENTE, DIRETOR) with role-based access control (RBAC).
     -   **Caderno:** Represents specification notebooks with statuses (OBSOLETO, EM_ANDAMENTO, APROVADO).
-    -   **ESP (Especificação):** Core entity with detailed fields, including content, status, and associated files. Extended fields include `introduzirComponente` (text) and 6 array fields: `constituentesIds`, `acessoriosIds`, `acabamentosIds`, `prototiposIds`, `aplicacoesIds`, `constituintesExecucaoIds` (all text arrays).
+    -   **ESP (Especificação):** Core entity with detailed fields, including content, status, and associated files. Extended fields include `introduzirComponente` (text) and 7 array fields: `constituentesIds`, `acessoriosIds`, `acabamentosIds`, `prototiposIds`, `aplicacoesIds`, `constituintesExecucaoIds`, `fichasReferenciaIds` (all text arrays).
     -   **ArquivoMidia:** Stores file metadata, with actual file data (base64 encoded) stored directly in PostgreSQL.
     -   **LogAtividade:** Audits all user actions within the system.
     -   **Catalog Tables:** `constituintes`, `acessorios`, `acabamentos`, `prototipos_comerciais`, `aplicacoes` for managing selectable options in the ESP editor.
@@ -34,12 +34,25 @@ The design adheres strictly to the official SEEDF visual identity, utilizing a t
         -   **Projetos:** File upload system for project documents
         -   **Descrição e Aplicação:** 5 catalog-based dropdown selections (Constituintes, Acessórios, Acabamentos, Protótipos Comerciais, Aplicações)
         -   **Execução:** Dynamic constituent selection system with initially 5 select boxes, expandable via "+" button, removable (beyond first 5) via trash icon
-        -   **Fichas de Referência, Recebimento, Serviços Incluídos, Critérios de Medição, Legislação e Referências:** Text areas for detailed content
+        -   **Fichas de Referência:** Catalog-based item relationship system with initially 1 select box, expandable via "+" button, removable (beyond first item) via trash icon
+        -   **Recebimento, Serviços Incluídos, Critérios de Medição, Legislação e Referências:** Text areas for detailed content
         -   **Visualizar PDF, Exportar:** Document export functionalities
     -   **Dashboard:** Provides filtering and search capabilities for managing ESPs.
     -   **Role-Based Access Control (RBAC):** Permissions are defined for ARQUITETO (create/edit ESPs, upload files), CHEFE_DE_NUCLEO/GERENTE (validate/monitor ESPs), and DIRETOR (approve ESPs, export DOCX, full access).
 
 ## Recent Development Notes
+
+### Fichas de Referência Tab Implementation (October 2025)
+-   **Feature:** Catalog-based item relationship system allowing users to link items from other catalogs to the current ESP.
+-   **Implementation:**
+    -   New `fichasReferenciaIds` text array field in database
+    -   Dynamic UI with initially 1 select box, expandable via "+" button
+    -   Action buttons (Salvar, Atualizar, Abrir PDF) with institutional black (#000000) background
+    -   `numFichasReferencia` state controls UI rendering
+-   **Critical Fix:** Added state synchronization in useEffect to ensure saved items display correctly when editing existing ESPs:
+    -   `setNumFichasReferencia(Math.max(1, esp.fichasReferenciaIds.length))`
+    -   Prevents data-loss view bug where saved items beyond index 0 would be hidden
+-   **Testing:** E2E Playwright tests validate add/remove behavior, button styling, and state synchronization.
 
 ### Execução Tab Implementation (October 2025)
 -   **Challenge:** Dynamic form arrays require careful state management to ensure UI updates reliably when items are added/removed.
@@ -49,6 +62,7 @@ The design adheres strictly to the official SEEDF visual identity, utilizing a t
     -   Add button: increments state and appends empty string to array
     -   Remove button: decrements state and filters array
 -   **Key Lesson:** Using `form.watch()` inside onClick handlers doesn't work reliably - use `form.getValues()` instead for reading current values in event handlers.
+-   **Critical Fix:** Added state synchronization to match Fichas de Referência implementation
 -   **Testing:** End-to-end Playwright tests validate add/remove behavior, button styling, and DOM updates.
 
 ## External Dependencies
