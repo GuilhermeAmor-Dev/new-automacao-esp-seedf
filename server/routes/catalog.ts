@@ -64,4 +64,14 @@ router.get("/fichas-recebimento", authenticateToken, async (req: AuthRequest, re
   }
 });
 
+// GET /api/catalog/servicos-incluidos - List all servicos incluidos
+router.get("/servicos-incluidos", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const servicosIncluidos = await storage.getServicosIncluidos();
+    res.json({ servicosIncluidos });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao listar serviços incluídos" });
+  }
+});
+
 export default router;

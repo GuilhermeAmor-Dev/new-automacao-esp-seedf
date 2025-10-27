@@ -186,6 +186,31 @@ export async function seedDatabase() {
       }
     }
 
+    // Serviços Incluídos
+    const servicosIncluidosData = [
+      { nome: "Instalação do Componente", descricao: "Serviço de instalação de componente técnico" },
+      { nome: "Montagem do Equipamento", descricao: "Montagem completa de equipamentos" },
+      { nome: "Ajuste e Nivelamento", descricao: "Ajuste fino e nivelamento de estruturas" },
+      { nome: "Limpeza Pós-Instalação", descricao: "Limpeza do local após instalação" },
+      { nome: "Apiloamento do terreno", descricao: "Preparação e compactação do terreno" },
+      { nome: "Base de concreto simples", descricao: "Execução de base em concreto simples" },
+      { nome: "Piso com Revestimento", descricao: "Execução de piso com revestimento" },
+      { nome: "Cobertura", descricao: "Execução de cobertura" },
+      { nome: "Alvenaria com revestimentos (interno e externo)", descricao: "Execução de alvenaria com revestimentos interno e externo" },
+      { nome: "Ralo e torneiras", descricao: "Instalação de ralos e torneiras" },
+      { nome: "Lubrificação de partes móveis", descricao: "Serviço de lubrificação de partes móveis" },
+    ];
+
+    for (const data of servicosIncluidosData) {
+      const existing = await storage.getServicoIncluidoByNome(data.nome);
+      if (!existing) {
+        await storage.createServicoIncluido(data);
+        logger.info(`Serviço Incluído created: ${data.nome}`);
+      } else {
+        logger.info(`Serviço Incluído already exists: ${data.nome}`);
+      }
+    }
+
     // Create 1 Caderno (check if exists first)
     const allCadernos = await storage.getCadernos();
     let caderno = allCadernos.find(c => c.titulo === "Caderno de Especificações - Edificações 2025");
