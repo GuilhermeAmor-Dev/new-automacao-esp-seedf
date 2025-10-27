@@ -1338,15 +1338,94 @@ export default function EspEditor() {
 
             {activeTab === "recebimento" && (
               <div className="h-full flex flex-col">
-                {/* Header com botões de ação */}
-                <div className="flex items-center justify-between mb-6">
+                {/* Header */}
+                <div className="mb-6">
                   <h1 className="text-2xl font-bold text-black">Recebimento</h1>
-                  <div className="flex gap-3">
+                </div>
+
+                {/* Layout: Área principal à esquerda + Botões verticais à direita */}
+                <div className="flex-1 flex gap-6 overflow-hidden">
+                  {/* Área principal do formulário com scroll */}
+                  <div className="flex-1 overflow-auto space-y-6 pr-4">
+                    {/* Select Boxes dinâmicos para Fichas de Recebimento */}
+                    {Array.from({ length: numFichasRecebimento }).map((_, index) => {
+                      const fichasRecebimentoIds = form.watch("fichasRecebimentoIds") || [];
+                      return (
+                        <div key={index} className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <Label htmlFor={`ficha-recebimento-${index}`} className="text-black">
+                              Ficha {index + 1}
+                            </Label>
+                            <Select
+                              value={fichasRecebimentoIds[index] || ""}
+                              onValueChange={(value) => {
+                                const current = form.getValues("fichasRecebimentoIds") || [];
+                                const updated = [...current];
+                                updated[index] = value;
+                                form.setValue("fichasRecebimentoIds", updated, { shouldDirty: true });
+                              }}
+                            >
+                              <SelectTrigger 
+                                id={`ficha-recebimento-${index}`}
+                                className="mt-1"
+                                data-testid={`select-ficha-recebimento-${index}`}
+                                aria-label="Campo de seleção. Escolha a ficha de recebimento vinculada ao componente."
+                              >
+                                <SelectValue placeholder={`Escolha a ficha ${index + 1}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {fichasRecebimentoData?.fichasRecebimento?.map((ficha: { id: string; nome: string }) => (
+                                  <SelectItem key={ficha.id} value={ficha.id}>
+                                    {ficha.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {index >= 1 && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                setNumFichasRecebimento(prev => prev - 1);
+                                const current = form.getValues("fichasRecebimentoIds") || [];
+                                form.setValue("fichasRecebimentoIds", current.filter((_, i) => i !== index), { shouldDirty: true });
+                              }}
+                              className="gap-2 text-destructive hover:text-destructive"
+                              data-testid={`button-remove-ficha-recebimento-${index}`}
+                              aria-label={`Remover ficha ${index + 1}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Botão para adicionar nova ficha */}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setNumFichasRecebimento(prev => prev + 1);
+                        const current = form.getValues("fichasRecebimentoIds") || [];
+                        form.setValue("fichasRecebimentoIds", [...current, ""], { shouldDirty: true });
+                      }}
+                      className="gap-2"
+                      data-testid="button-add-ficha-recebimento"
+                      aria-label="Adicionar nova ficha de recebimento"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Ficha
+                    </Button>
+                  </div>
+
+                  {/* Botões de ação verticais no lado direito */}
+                  <div className="flex flex-col gap-3 w-48">
                     <Button
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
                       data-testid="button-save-recebimento"
-                      className="gap-2 text-white hover:opacity-90"
+                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
                       style={{ backgroundColor: "#000000" }}
                       aria-label="Botão Salvar — grava os arquivos enviados."
                     >
@@ -1360,9 +1439,9 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-recebimento"
-                      className="gap-2 text-white hover:opacity-90"
+                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
                       style={{ backgroundColor: "#000000" }}
-                      aria-label="Botão Atualizar — recarregar as listas de banco de dados."
+                      aria-label="Botão Atualizar — recarrega os campos."
                     >
                       <Loader2 className="h-4 w-4" />
                       Atualizar
@@ -1371,7 +1450,7 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-recebimento"
-                      className="gap-2 text-white hover:opacity-90"
+                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
                       style={{ backgroundColor: "#000000" }}
                       aria-label="Botão Abrir PDF — gera ou abre o arquivo PDF da ESP."
                     >
@@ -1379,80 +1458,6 @@ export default function EspEditor() {
                       Abrir PDF
                     </Button>
                   </div>
-                </div>
-
-                {/* Área principal do formulário com scroll */}
-                <div className="flex-1 overflow-auto max-w-4xl space-y-6 pr-4">
-                  {/* Select Boxes dinâmicos para Fichas de Recebimento */}
-                  {Array.from({ length: numFichasRecebimento }).map((_, index) => {
-                    const fichasRecebimentoIds = form.watch("fichasRecebimentoIds") || [];
-                    return (
-                      <div key={index} className="flex items-end gap-2">
-                        <div className="flex-1">
-                          <Label htmlFor={`ficha-recebimento-${index}`} className="text-black">
-                            Ficha {index + 1}
-                          </Label>
-                          <Select
-                            value={fichasRecebimentoIds[index] || ""}
-                            onValueChange={(value) => {
-                              const current = form.getValues("fichasRecebimentoIds") || [];
-                              const updated = [...current];
-                              updated[index] = value;
-                              form.setValue("fichasRecebimentoIds", updated, { shouldDirty: true });
-                            }}
-                          >
-                            <SelectTrigger 
-                              id={`ficha-recebimento-${index}`}
-                              className="mt-1"
-                              data-testid={`select-ficha-recebimento-${index}`}
-                              aria-label="Campo de seleção. Escolha a ficha de recebimento vinculada ao componente."
-                            >
-                              <SelectValue placeholder={`Escolha a ficha ${index + 1}`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fichasRecebimentoData?.fichasRecebimento?.map((ficha: { id: string; nome: string }) => (
-                                <SelectItem key={ficha.id} value={ficha.id}>
-                                  {ficha.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {index >= 1 && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              setNumFichasRecebimento(prev => prev - 1);
-                              const current = form.getValues("fichasRecebimentoIds") || [];
-                              form.setValue("fichasRecebimentoIds", current.filter((_, i) => i !== index), { shouldDirty: true });
-                            }}
-                            className="gap-2 text-destructive hover:text-destructive"
-                            data-testid={`button-remove-ficha-recebimento-${index}`}
-                            aria-label={`Remover ficha ${index + 1}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Botão para adicionar nova ficha */}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setNumFichasRecebimento(prev => prev + 1);
-                      const current = form.getValues("fichasRecebimentoIds") || [];
-                      form.setValue("fichasRecebimentoIds", [...current, ""], { shouldDirty: true });
-                    }}
-                    className="gap-2"
-                    data-testid="button-add-ficha-recebimento"
-                    aria-label="Adicionar nova ficha de recebimento"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Adicionar Ficha
-                  </Button>
                 </div>
               </div>
             )}
