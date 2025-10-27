@@ -164,6 +164,23 @@ export const insertFichaRecebimentoSchema = createInsertSchema(fichasRecebimento
 export type InsertFichaRecebimento = z.infer<typeof insertFichaRecebimentoSchema>;
 export type FichaRecebimento = typeof fichasRecebimento.$inferSelect;
 
+// Serviços Incluídos catalog
+export const servicosIncluidos = pgTable("servicos_incluidos", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  nome: text("nome").notNull(), // ex: "Instalação do Componente", "Montagem do Equipamento", etc.
+  descricao: text("descricao"), // Descrição opcional do serviço
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertServicoIncluidoSchema = createInsertSchema(servicosIncluidos).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertServicoIncluido = z.infer<typeof insertServicoIncluidoSchema>;
+export type ServicoIncluido = typeof servicosIncluidos.$inferSelect;
+
 // ESP model
 export const esps = pgTable("esps", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -198,6 +215,8 @@ export const esps = pgTable("esps", {
   fichasReferenciaIds: text("fichas_referencia_ids").array(), // Array de IDs de itens relacionados (de qualquer catálogo)
   // Novos campos para Recebimento
   fichasRecebimentoIds: text("fichas_recebimento_ids").array(), // Array de IDs de fichas de recebimento
+  // Novos campos para Serviços Incluídos
+  servicosIncluidosIds: text("servicos_incluidos_ids").array(), // Array de IDs de serviços incluídos
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

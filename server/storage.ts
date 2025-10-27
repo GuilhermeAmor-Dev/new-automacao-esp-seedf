@@ -22,6 +22,8 @@ import {
   type InsertAplicacao,
   type FichaRecebimento,
   type InsertFichaRecebimento,
+  type ServicoIncluido,
+  type InsertServicoIncluido,
   Perfil,
   StatusCaderno,
   Selo,
@@ -37,6 +39,7 @@ import {
   prototiposComerciais,
   aplicacoes,
   fichasRecebimento,
+  servicosIncluidos,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -97,6 +100,10 @@ export interface IStorage {
   getFichasRecebimento(): Promise<FichaRecebimento[]>;
   getFichaRecebimentoByNome(nome: string): Promise<FichaRecebimento | undefined>;
   createFichaRecebimento(ficha: InsertFichaRecebimento): Promise<FichaRecebimento>;
+  
+  getServicosIncluidos(): Promise<ServicoIncluido[]>;
+  getServicoIncluidoByNome(nome: string): Promise<ServicoIncluido | undefined>;
+  createServicoIncluido(servico: InsertServicoIncluido): Promise<ServicoIncluido>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -477,6 +484,29 @@ export class DatabaseStorage implements IStorage {
       createdAt: now,
     };
     await db.insert(fichasRecebimento).values(values);
+    return values;
+  }
+
+  async getServicosIncluidos(): Promise<ServicoIncluido[]> {
+    return await db.select().from(servicosIncluidos).where(eq(servicosIncluidos.ativo, true));
+  }
+
+  async getServicoIncluidoByNome(nome: string): Promise<ServicoIncluido | undefined> {
+    const result = await db.select().from(servicosIncluidos).where(eq(servicosIncluidos.nome, nome)).limit(1);
+    return result[0];
+  }
+
+  async createServicoIncluido(insertServico: InsertServicoIncluido): Promise<ServicoIncluido> {
+    const id = randomUUID();
+    const now = new Date();
+    const values: ServicoIncluido = {
+      id,
+      nome: insertServico.nome,
+      descricao: insertServico.descricao ?? null,
+      ativo: insertServico.ativo ?? true,
+      createdAt: now,
+    };
+    await db.insert(servicosIncluidos).values(values);
     return values;
   }
 }
