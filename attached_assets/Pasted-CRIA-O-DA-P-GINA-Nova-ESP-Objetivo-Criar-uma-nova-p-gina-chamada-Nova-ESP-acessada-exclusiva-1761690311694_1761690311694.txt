@@ -1,0 +1,40 @@
+CRIAÇÃO DA PÁGINA “Nova ESP”
+Objetivo: Criar uma nova página chamada “Nova ESP”, acessada exclusivamente pelo botão “+ Nova ESP”.
+Essa página tem como finalidade fazer a junção de vários cadernos, permitindo ao usuário vincular múltiplos cadernos previamente criados ou já registrados no banco de dados para formar uma nova ESP.
+Estrutura e Layout
+•	Cabeçalho:
+o	Deve seguir exatamente o mesmo padrão visual e funcional das demais páginas do sistema.
+o	Contém: título da página, ícone de voltar, identificação do usuário e opções padrão (notificações e sair).
+•	Layout geral:
+o	Deve manter a mesma estrutura visual e responsiva das outras telas do sistema.
+o	Inclui scroll bar à direita, e os botões Salvar, Atualizar e Abrir PDF com o mesmo estilo, posição e funções originais.
+Área central da página
+O corpo da página deve apresentar o formulário destinado à inicialização de uma nova ESP.
+Nele, o usuário seleciona quais cadernos estarão vinculados à nova ESP, garantindo organização e separação por projetos ou temas.
+Elementos principais:
+1.	Identificador de Página (Título Lateral)
+o	Elemento visual fixo, em formato de caixa azul.
+o	Texto exibido: “ESP”.
+o	Função: reforçar visualmente o contexto da tela, permanecendo fixo mesmo ao rolar a página.
+2.	Select Box — Caderno
+o	Função: listar todos os cadernos disponíveis para vinculação à nova ESP.
+o	Cada opção representa um caderno previamente criado e salvo no sistema.
+o	Acessibilidade (leitor de tela): “Campo de seleção. Escolha o caderno onde a nova ESP será criada.”
+o	Comportamento: permitir múltipla seleção de cadernos (multi-select), exibindo os nomes dos cadernos e seus respectivos identificadores.
+o	Obrigatório: sim.
+
+Regras adicionais
+•	Após selecionar os cadernos, o botão Salvar deve criar a nova ESP e registrar sua relação no banco de dados.
+•	O botão Atualizar deve limpar os campos ou recarregar a tela.
+•	O botão Abrir PDF deve gerar a visualização do documento consolidado da ESP criada.
+•	A página deve incluir validações obrigatórias antes do envio e exibir mensagens de sucesso ou erro após salvar.
+•	Todo o design e responsividade devem seguir o padrão do sistema.
+Integração com banco de dados
+•	Esta página deve alimentar diretamente o banco de dados principal vinculado ao módulo Criação de Cadernos, armazenando:
+o	O identificador da nova ESP criada.
+o	As referências (IDs) dos cadernos associados a ela.
+o	Data e usuário responsável pela criação.
+Manter inalterado
+•	Cabeçalho.
+•	Scroll bar à direita.
+•	Botões Salvar, Atualizar e Abrir PDF (sem alteração de cor, ícone, rótulo, posição ou função).
