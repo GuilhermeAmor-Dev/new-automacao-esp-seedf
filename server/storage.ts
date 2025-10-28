@@ -24,10 +24,13 @@ import {
   type InsertFichaRecebimento,
   type ServicoIncluido,
   type InsertServicoIncluido,
+  type ItemEspecificacao,
+  type InsertItemEspecificacao,
   Perfil,
   StatusCaderno,
   Selo,
   TipoArquivo,
+  CategoriaItem,
   users,
   cadernos,
   esps,
@@ -40,6 +43,7 @@ import {
   aplicacoes,
   fichasRecebimento,
   servicosIncluidos,
+  itensEspecificacao,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -104,6 +108,13 @@ export interface IStorage {
   getServicosIncluidos(): Promise<ServicoIncluido[]>;
   getServicoIncluidoByNome(nome: string): Promise<ServicoIncluido | undefined>;
   createServicoIncluido(servico: InsertServicoIncluido): Promise<ServicoIncluido>;
+  
+  // Itens Especificação methods
+  getItensEspecificacao(filters?: { categoria?: CategoriaItem; ativo?: boolean }): Promise<ItemEspecificacao[]>;
+  getItemEspecificacao(id: string): Promise<ItemEspecificacao | undefined>;
+  createItemEspecificacao(item: InsertItemEspecificacao): Promise<ItemEspecificacao>;
+  updateItemEspecificacao(id: string, updates: Partial<InsertItemEspecificacao>): Promise<ItemEspecificacao | undefined>;
+  deleteItemEspecificacao(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -510,6 +521,66 @@ export class DatabaseStorage implements IStorage {
     };
     await db.insert(servicosIncluidos).values(values);
     return values;
+  }
+
+  // Itens Especificação methods
+  async getItensEspecificacao(filters?: { categoria?: CategoriaItem; ativo?: boolean }): Promise<ItemEspecificacao[]> {
+    let query = db.select().from(itensEspecificacao);
+    const conditions = [];
+    
+    if (filters?.categoria) {
+      conditions.push(eq(itensEspecificacao.categoria, filters.categoria));
+    }
+    if (filters?.ativo !== undefined) {
+      conditions.push(eq(itensEspecificacao.ativo, filters.ativo));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query;
+  }
+
+  async getItemEspecificacao(id: string): Promise<ItemEspecificacao | undefined> {
+    const result = await db.select().from(itensEspecificacao).where(eq(itensEspecificacao.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createItemEspecificacao(insertItem: InsertItemEspecificacao): Promise<ItemEspecificacao> {
+    const id = randomUUID();
+    const now = new Date();
+    const values: ItemEspecificacao = {
+      id,
+      titulo: insertItem.titulo,
+      categoria: insertItem.categoria,
+      codigoReferencia: insertItem.codigoReferencia ?? null,
+      descricaoTecnico: insertItem.descricaoTecnico ?? null,
+      especificacoes: insertItem.especificacoes ?? null,
+      caracteristicasTecnicas: insertItem.caracteristicasTecnicas ?? null,
+      normasReferencias: insertItem.normasReferencias ?? null,
+      aplicacao: insertItem.aplicacao ?? null,
+      ativo: insertItem.ativo ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.insert(itensEspecificacao).values(values);
+    return values;
+  }
+
+  async updateItemEspecificacao(id: string, updates: Partial<InsertItemEspecificacao>): Promise<ItemEspecificacao | undefined> {
+    const now = new Date();
+    await db.update(itensEspecificacao)
+      .set({ ...updates, updatedAt: now })
+      .where(eq(itensEspecificacao.id, id));
+    return this.getItemEspecificacao(id);
+  }
+
+  async deleteItemEspecificacao(id: string): Promise<boolean> {
+    await db.update(itensEspecificacao)
+      .set({ ativo: false })
+      .where(eq(itensEspecificacao.id, id));
+    return true;
   }
 }
 
