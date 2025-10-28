@@ -21,7 +21,7 @@ The design adheres strictly to the official SEEDF visual identity, utilizing a t
 -   **Data Models:**
     -   **User:** Manages various profiles (ARQUITETO, CHEFE_DE_NUCLEO, GERENTE, DIRETOR) with role-based access control (RBAC).
     -   **Caderno:** Represents specification notebooks with statuses (OBSOLETO, EM_ANDAMENTO, APROVADO).
-    -   **ESP (Especificação):** Core entity with detailed fields, including content, status, and associated files. Extended fields include `introduzirComponente` (text) and several array fields for catalog item IDs.
+    -   **ESP (Especificação):** Core entity with detailed fields, including content, status, and associated files. Supports multi-caderno relationships via `cadernosIds` array field while maintaining backward compatibility with legacy `cadernoId` field. Extended fields include `introduzirComponente` (text) and several array fields for catalog item IDs.
     -   **ArquivoMidia:** Stores file metadata.
     -   **LogAtividade:** Audits all user actions.
     -   **ItensEspecificacao:** Unified catalog table for managing all selectable options in the ESP editor, categorized by `CategoriaItem` and `SubcategoriaItem`.
@@ -30,10 +30,19 @@ The design adheres strictly to the official SEEDF visual identity, utilizing a t
 -   **Authentication:** JWT tokens are stored in `localStorage` and sent via `Authorization: Bearer` headers.
 -   **Feature Specifications:**
     -   **ESP Editor:** A multi-tab interface (11 tabs) for detailed specification editing, integrating dynamically with the unified `ItensEspecificacao` catalog.
+    -   **Nova ESP:** A dedicated page at `/nova-esp` for creating ESPs linked to multiple cadernos simultaneously. Features checkbox-based multi-selection, Zod validation, and automatic redirection to the ESP editor after creation. Implements POST `/api/esp/nova` endpoint with proper validation and logging.
     -   **Criação de Itens:** A standalone page for creating and managing technical items (`ItensEspecificacao`) that feed directly into the ESP catalog system.
-    -   **Dashboard:** Provides filtering and search capabilities for managing ESPs.
+    -   **Dashboard:** Provides filtering and search capabilities for managing ESPs. "Nova ESP" button routes to multi-caderno creation page.
     -   **Role-Based Access Control (RBAC):** Permissions are defined for ARQUITETO (create/edit), CHEFE_DE_NUCLEO/GERENTE (validate/monitor), and DIRETOR (approve, export DOCX, full access).
     -   **Unified Catalog System:** `itens_especificacao` serves as the single source of truth for all catalog data, ensuring consistency and automatic integration of new items into the ESP Editor.
+
+## Recent Changes (October 28, 2025)
+- **Multi-Caderno ESP Support:** Added `cadernosIds` text array field to ESP schema for associating multiple cadernos with a single ESP while maintaining backward compatibility with legacy `cadernoId` field.
+- **Nova ESP Page:** Created new `/nova-esp` route with checkbox-based multi-caderno selection interface following institutional design guidelines.
+- **API Enhancement:** Implemented POST `/api/esp/nova` endpoint with Zod validation, caderno existence checks, and proper logging for multi-caderno ESP creation.
+- **Storage Updates:** Modified `createEsp` and `updateEsp` storage methods to handle `cadernosIds` array field.
+- **Navigation Fix:** Fixed JSON parsing in frontend mutation to ensure correct navigation after ESP creation.
+- **Testing:** End-to-end test validated complete flow from login → Nova ESP page → caderno selection → ESP creation → editor navigation.
 
 ## External Dependencies
 -   **PostgreSQL (via Neon):** Primary relational database.
