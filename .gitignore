@@ -1,6 +1,30 @@
-node_modules
-dist
+# SO / editor
 .DS_Store
-server/public
-vite.config.ts.*
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Segredos
+.env
+.env.*
+
+# Dependências / builds / cobertura
+node_modules/
+dist/
+build/
+coverage/
+
+# Replit / arquivos locais e bins
+.local/
+*.bin
+
+# Arquivos de pacote
 *.tar.gz
+*.zip
+
+# OBS:Tudo isso tem base no rpt
