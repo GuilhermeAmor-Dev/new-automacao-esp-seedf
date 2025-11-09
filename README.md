@@ -11,7 +11,11 @@ Sistema de automação do Caderno de Especificações (ESP) da Secretaria de Est
 ## 🚀 Como Executar
 
 ```bash
+<<<<<<< HEAD
 # Instalar dependências
+=======
+# Instalar dependências (já instaladas)
+>>>>>>> b356921 (Atualização do README e da estruturação  com seção traduzida)
 npm install
 
 # Executar aplicação (frontend + backend)
