@@ -15,7 +15,7 @@ Sistema de automação do Caderno de Especificações (ESP) da Secretaria de Est
 # Instalar dependências
 =======
 # Instalar dependências (já instaladas)
->>>>>>> b356921 (Atualização do README e da estruturação  com seção traduzida)
+
 npm install
 
 # Executar aplicação (frontend + backend)
@@ -23,6 +23,7 @@ npm run dev
 ```
 
 A aplicação estará disponível em:
+
 - Frontend: http://localhost:5000
 - Backend API: http://localhost:4000
 - API Docs: http://localhost:4000/api/docs
@@ -30,30 +31,36 @@ A aplicação estará disponível em:
 ## 🔐 Credenciais de Teste
 
 ### Arquiteto (Criar/Editar ESPs)
+
 - Email: `arquiteto@seedf.df.gov.br`
 - Senha: `Arquiteto123!`
 
 ### Chefe de Núcleo (Validar e Acompanhar)
+
 - Email: `chefe@seedf.df.gov.br`
 - Senha: `Chefe123!`
 
 ### Gerente (Validar e Exportar PDF)
+
 - Email: `gerente@seedf.df.gov.br`
 - Senha: `Gerente123!`
 
 ### Diretor (Aprovar e Exportar DOCX)
+
 - Email: `diretor@seedf.df.gov.br`
 - Senha: `Diretor123!`
 
 ## 📋 Endpoints da API
 
 ### Autenticação
+
 - `POST /api/auth/register` - Registrar usuário
 - `POST /api/auth/login` - Fazer login
 - `POST /api/auth/logout` - Fazer logout
 - `GET /api/auth/me` - Obter usuário atual
 
 ### Cadernos
+
 - `GET /api/cadernos` - Listar cadernos
 - `GET /api/cadernos/:id` - Obter caderno
 - `POST /api/cadernos` - Criar caderno
@@ -61,6 +68,7 @@ A aplicação estará disponível em:
 - `DELETE /api/cadernos/:id` - Deletar caderno
 
 ### ESPs
+
 - `GET /api/esp` - Listar ESPs
 - `GET /api/esp/:id` - Obter ESP
 - `POST /api/esp` - Criar ESP
@@ -68,23 +76,26 @@ A aplicação estará disponível em:
 - `DELETE /api/esp/:id` - Deletar ESP
 
 ### Exportação
+
 - `POST /api/export/pdf/:espId` - Exportar PDF
 - `POST /api/export/docx/:espId` - Exportar DOCX
 
 ### Logs
+
 - `GET /api/logs` - Obter logs de atividade
 
 ### Saúde
+
 - `GET /api/health` - Verificar status do sistema
 
 ## 🔒 Permissões (RBAC)
 
-| Perfil | Permissões |
-|--------|------------|
-| **ARQUITETO** | Criar/Editar ESP, Criar/Editar Caderno, Upload de arquivos |
-| **CHEFE_DE_NUCLEO** | Criar/Editar Caderno, Visualizar logs, Validar ESP |
-| **GERENTE** | Deletar Caderno, Visualizar logs, Exportar PDF |
-| **DIRETOR** | Todas as permissões, Exportar DOCX, Aprovar ESP |
+| Perfil              | Permissões                                                 |
+| ------------------- | ---------------------------------------------------------- |
+| **ARQUITETO**       | Criar/Editar ESP, Criar/Editar Caderno, Upload de arquivos |
+| **CHEFE_DE_NUCLEO** | Criar/Editar Caderno, Visualizar logs, Validar ESP         |
+| **GERENTE**         | Deletar Caderno, Visualizar logs, Exportar PDF             |
+| **DIRETOR**         | Todas as permissões, Exportar DOCX, Aprovar ESP            |
 
 ## 📁 Estrutura do Projeto
 
@@ -108,6 +119,7 @@ A aplicação estará disponível em:
 ## 🛠️ Tecnologias
 
 ### Frontend
+
 - React + TypeScript + Vite
 - Tailwind CSS
 - Wouter (routing)
@@ -117,6 +129,7 @@ A aplicação estará disponível em:
 - Lucide React (icons)
 
 ### Backend
+
 - Express + TypeScript
 - JWT + bcrypt
 - Zod (validation)
@@ -130,6 +143,7 @@ Consulte `estruturação.md` para documentação detalhada do projeto.
 ## ✅ Status do Projeto
 
 ### Completado
+
 - ✅ Frontend completo com todas as páginas
 - ✅ Backend com autenticação JWT
 - ✅ RBAC completo
@@ -140,6 +154,7 @@ Consulte `estruturação.md` para documentação detalhada do projeto.
 - ✅ Design institucional WCAG AA
 
 ### Próximos Passos (Fora do MVP)
+
 - Integração real com MongoDB GridFS
 - Recuperação de senha por e-mail
 - Notificações em tempo real
