@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -23,7 +23,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [rememberMe, setRememberMe] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
@@ -50,7 +50,6 @@ export default function Login() {
         throw new Error(result.error || "Credenciais inválidas");
       }
 
-      // Save user and token to localStorage
       if (result.user) {
         localStorage.setItem("esp_auth_user", JSON.stringify(result.user));
       }
@@ -71,13 +70,13 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-institutional-blue flex flex-col">
       <PublicHeader />
-      
+
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
           <h1 className="text-2xl font-bold text-institutional-blue mb-6 text-center">
             Login
           </h1>
-          
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <Label htmlFor="email" className="text-sm font-medium">
@@ -87,7 +86,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 {...register("email")}
-                placeholder="usuario@seedf.df.gov.br"
+                placeholder="usuario@se.df.gov.br"
                 data-testid="input-email"
                 aria-required="true"
                 aria-invalid={!!errors.email}
@@ -138,7 +137,7 @@ export default function Login() {
                   Lembrar-me
                 </Label>
               </div>
-              
+
               <Link
                 href="/recover"
                 className="text-institutional-blue hover:underline text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-institutional-blue focus-visible:ring-offset-2 rounded px-2 py-1"
@@ -151,7 +150,7 @@ export default function Login() {
             <InstitutionalButton
               type="submit"
               variant="primary"
-              className="w-full"
+              className="w-full bg-institutional-blue text-white hover:bg-[#1b7bcf] hover:text-white"
               isLoading={isSubmitting}
               disabled={isSubmitting}
               data-testid="button-login"
@@ -166,7 +165,7 @@ export default function Login() {
               className="text-institutional-blue hover:underline text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-institutional-blue focus-visible:ring-offset-2 rounded px-2 py-1"
               data-testid="link-register"
             >
-              Não tem uma conta? Registre-se
+              Não tem uma conta? <span className="font-bold">Registre-se</span>
             </Link>
           </div>
         </div>
