@@ -191,7 +191,8 @@ export enum CategoriaItem {
   SERVICOS_INCLUIDOS = "SERVIÇOS INCLUÍDOS NOS PREÇOS",
   CRITERIOS_MEDICAO = "CRITÉRIOS DE MEDIÇÃO",
   LEGISLACAO = "LEGISLAÇÃO",
-  REFERENCIA = "REFERÊNCIA"
+  NORMAS = "NORMAS",
+  REFERENCIA = "REFERÊNCIA",
 }
 
 // Subcategorias (dependentes da categoria selecionada)
@@ -201,13 +202,13 @@ export enum SubcategoriaItem {
   ACABAMENTOS = "Acabamentos",
   CONSTITUINTES = "Constituintes",
   PROTOTIPO_COMERCIAL = "Protótipo Comercial",
+  SEM_SUBCATEGORIA = "Sem subcategoria",
   // Subcategorias para FICHA DE REFERÊNCIA
   CATALOGO_SERVICOS = "Catálogo de Serviços",
   // Subcategoria geral
-  TEXTO_GERAL = "Texto Geral"
+  TEXTO_GERAL = "Texto Geral",
 }
 
-// Itens e Especificações Técnicas
 export const itensEspecificacao = pgTable("itens_especificacao", {
   id: varchar("id", { length: 36 }).primaryKey(),
   titulo: text("titulo").notNull(),
