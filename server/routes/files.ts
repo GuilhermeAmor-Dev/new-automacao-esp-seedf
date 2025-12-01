@@ -5,7 +5,7 @@ import { TipoArquivo } from "@shared/schema";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { requireRole, Permissions } from "../middleware/rbac";
 import { logger } from "../utils/logger";
-import { uploadBufferToGridFS, getGridFSBucket, ObjectId } from "../mongo";
+import { uploadBufferToGridFS, getGridFSBucket, ObjectId, readGridFSFileToBuffer } from "../mongo";
 
 const router = Router();
 
@@ -81,15 +81,17 @@ router.post(
         }
 
         let fileData: string;
+        let bucket = "esp_files";
 
-        // Para imagens, enviar para GridFS (MongoDB) e armazenar o id
         if (file.mimetype.startsWith("image/")) {
-          const mongoId = await uploadBufferToGridFS(file.originalname, file.mimetype, file.buffer);
-          fileData = `mongo:${mongoId.toString()}`;
-        } else {
-          // Demais arquivos continuam em base64 no Postgres
-          fileData = file.buffer.toString("base64");
+          bucket = "esp_images";
+        } else if (file.mimetype === "application/pdf" || file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+          bucket = "esp_docs";
         }
+
+        // Save to GridFS with bucket and keep pointer
+        const mongoId = await uploadBufferToGridFS(file.originalname, file.mimetype, file.buffer, bucket);
+        fileData = `mongo:${bucket}:${mongoId.toString()}`;
 
         // Save file to database
         const arquivoMidia = await storage.createArquivoMidia({
@@ -171,11 +173,14 @@ router.get("/:id/download", authenticateToken, async (req: AuthRequest, res) => 
     }
 
     if (arquivo.fileData.startsWith("mongo:")) {
-      const bucket = await getGridFSBucket();
-      const objectId = new ObjectId(arquivo.fileData.replace("mongo:", ""));
+      const parts = arquivo.fileData.split(":");
+      const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+      const objectId = parts.length === 3 ? parts[2] : parts[1];
+
       res.setHeader("Content-Type", arquivo.contentType);
       res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
-      const downloadStream = bucket.openDownloadStream(objectId);
+      const bucket = await getGridFSBucket(bucketName);
+      const downloadStream = bucket.openDownloadStream(new ObjectId(objectId));
       downloadStream.on("error", () => res.status(404).json({ error: "Arquivo não encontrado" }));
       downloadStream.pipe(res);
     } else {
@@ -203,10 +208,13 @@ router.get("/:id/stream", authenticateToken, async (req: AuthRequest, res) => {
     }
 
     if (arquivo.fileData.startsWith("mongo:")) {
-      const bucket = await getGridFSBucket();
-      const objectId = new ObjectId(arquivo.fileData.replace("mongo:", ""));
+      const parts = arquivo.fileData.split(":");
+      const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+      const objectId = parts.length === 3 ? parts[2] : parts[1];
+
       res.setHeader("Content-Type", arquivo.contentType);
-      const downloadStream = bucket.openDownloadStream(objectId);
+      const bucket = await getGridFSBucket(bucketName);
+      const downloadStream = bucket.openDownloadStream(new ObjectId(objectId));
       downloadStream.on("error", () => res.status(404).json({ error: "Arquivo não encontrado" }));
       downloadStream.pipe(res);
     } else {

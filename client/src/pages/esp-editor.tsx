@@ -78,7 +78,7 @@ export default function EspEditor() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const user = getAuthUser();
-  const [numConstituintesExecucao, setNumConstituintesExecucao] = useState(5);
+  const [numConstituintesExecucao, setNumConstituintesExecucao] = useState(1);
   const [numFichasReferencia, setNumFichasReferencia] = useState(1);
   const [numFichasRecebimento, setNumFichasRecebimento] = useState(1);
   const [numServicosIncluidos, setNumServicosIncluidos] = useState(1);
@@ -302,7 +302,7 @@ export default function EspEditor() {
       const recebimentoIds = esp.fichasRecebimentoIds || [];
       const servicosIds = esp.servicosIncluidosIds || [];
       console.log("ESP loaded - servicosIncluidosIds:", esp.servicosIncluidosIds, "length:", servicosIds.length);
-      setNumConstituintesExecucao(Math.max(5, execucaoIds.length));
+      setNumConstituintesExecucao(Math.max(1, execucaoIds.length));
       setNumFichasReferencia(Math.max(1, fichasIds.length));
       setNumFichasRecebimento(Math.max(1, recebimentoIds.length));
       setNumServicosIncluidos(Math.max(1, servicosIds.length));
@@ -1024,8 +1024,8 @@ export default function EspEditor() {
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
                       data-testid="button-save-descricao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <Save className="h-4 w-4" />
                       Salvar
@@ -1042,8 +1042,8 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-descricao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <Loader2 className="h-4 w-4" />
                       Atualizar
@@ -1052,8 +1052,8 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-descricao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <FileText className="h-4 w-4" />
                       Abrir PDF
@@ -1271,8 +1271,8 @@ export default function EspEditor() {
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
                       data-testid="button-save-execucao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <Save className="h-4 w-4" />
                       Salvar
@@ -1284,8 +1284,8 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-execucao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <Loader2 className="h-4 w-4" />
                       Atualizar
@@ -1294,8 +1294,8 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-execucao"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                     >
                       <FileText className="h-4 w-4" />
                       Abrir PDF
@@ -1396,8 +1396,8 @@ export default function EspEditor() {
                     <Button
                       onClick={handleSave}
                       data-testid="button-save-fichas"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                       aria-label="Botão Salvar — grava os arquivos enviados."
                     >
                       <Save className="h-4 w-4" />
@@ -1409,8 +1409,8 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-fichas"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                       aria-label="Botão Atualizar — recarregar as listas de banco de dados."
                     >
                       <Loader2 className="h-4 w-4" />
@@ -1420,8 +1420,8 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-fichas"
-                      className="gap-2 text-white hover:opacity-90"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf]"
+                      
                       aria-label="Botão Abrir PDF — gera ou abre o arquivo PDF da ESP."
                     >
                       <FileText className="h-4 w-4" />
@@ -1603,8 +1603,8 @@ export default function EspEditor() {
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
                       data-testid="button-save-recebimento"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Salvar — grava os arquivos enviados."
                     >
                       <Save className="h-4 w-4" />
@@ -1617,8 +1617,8 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-recebimento"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Atualizar — recarrega os campos."
                     >
                       <Loader2 className="h-4 w-4" />
@@ -1628,8 +1628,8 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-recebimento"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Abrir PDF — gera ou abre o arquivo PDF da ESP."
                     >
                       <FileText className="h-4 w-4" />
@@ -1729,8 +1729,8 @@ export default function EspEditor() {
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
                       data-testid="button-save-servicos"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Salvar — grava os serviços incluídos."
                     >
                       <Save className="h-4 w-4" />
@@ -1743,8 +1743,8 @@ export default function EspEditor() {
                         toast({ title: "Dados atualizados" });
                       }}
                       data-testid="button-refresh-servicos"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Atualizar — recarrega os campos."
                     >
                       <Loader2 className="h-4 w-4" />
@@ -1754,8 +1754,8 @@ export default function EspEditor() {
                       onClick={handleExportPDF}
                       disabled={isNewEsp}
                       data-testid="button-open-pdf-servicos"
-                      className="gap-2 text-white hover:opacity-90 w-full justify-start"
-                      style={{ backgroundColor: "#000000" }}
+                      className="gap-2 bg-institutional-blue text-white hover:bg-[#1b7bcf] w-full justify-start"
+                      
                       aria-label="Botão Abrir PDF — gera ou abre o arquivo PDF da ESP."
                     >
                       <FileText className="h-4 w-4" />

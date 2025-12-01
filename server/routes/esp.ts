@@ -204,7 +204,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticateToken,
-  requireRole(...Permissions.editEsp),
+  requireRole(...Permissions.deleteEsp),
   validateParams(paramsSchema),
   async (req: AuthRequest, res) => {
     try {

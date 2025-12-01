@@ -113,6 +113,11 @@ router.patch(
         return res.status(401).json({ error: "Não autenticado" });
       }
 
+      // Se tentar alterar status, valida permissão de mudança de status
+      if (req.body.status && !Permissions.changeCadernoStatus.includes(req.user.perfil)) {
+        return res.status(403).json({ error: "Acesso negado", message: "Perfil não pode alterar status" });
+      }
+
       const caderno = await storage.updateCaderno(req.params.id, req.body);
       if (!caderno) {
         return res.status(404).json({ error: "Caderno não encontrado" });

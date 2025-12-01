@@ -23,15 +23,18 @@ export function requireRole(...allowedRoles: Perfil[]) {
 // Permissões específicas por ação
 export const Permissions = {
   // ESP permissions
-  createEsp: [Perfil.ARQUITETO],
-  editEsp: [Perfil.ARQUITETO],
+  createEsp: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
+  editEsp: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
+  deleteEsp: [Perfil.GERENTE, Perfil.DIRETOR],
+  changeEspStatus: [Perfil.GERENTE, Perfil.DIRETOR],
   approveEsp: [Perfil.DIRETOR],
   viewEsp: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
   
   // Caderno permissions
-  createCaderno: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO],
-  editCaderno: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO],
+  createCaderno: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
+  editCaderno: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],
   deleteCaderno: [Perfil.GERENTE, Perfil.DIRETOR],
+  changeCadernoStatus: [Perfil.GERENTE, Perfil.DIRETOR],
   
   // Export permissions
   exportPdf: [Perfil.ARQUITETO, Perfil.CHEFE_DE_NUCLEO, Perfil.GERENTE, Perfil.DIRETOR],

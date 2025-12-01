@@ -1,6 +1,7 @@
 import { MongoClient, GridFSBucket, ObjectId } from "mongodb";
 
 const mongoUri = process.env.MONGODB_URI;
+const DEFAULT_BUCKET = "esp_files";
 
 let clientPromise: Promise<MongoClient> | null = null;
 
@@ -25,18 +26,19 @@ export async function getMongoClient(): Promise<MongoClient> {
   return clientPromise;
 }
 
-export async function getGridFSBucket(): Promise<GridFSBucket> {
+export async function getGridFSBucket(bucketName: string = DEFAULT_BUCKET): Promise<GridFSBucket> {
   const client = await getMongoClient();
   const db = client.db(getDbName(mongoUri!));
-  return new GridFSBucket(db, { bucketName: "esp_files" });
+  return new GridFSBucket(db, { bucketName });
 }
 
 export async function uploadBufferToGridFS(
   filename: string,
   contentType: string,
-  buffer: Buffer
+  buffer: Buffer,
+  bucketName: string = DEFAULT_BUCKET,
 ): Promise<ObjectId> {
-  const bucket = await getGridFSBucket();
+  const bucket = await getGridFSBucket(bucketName);
   return await new Promise<ObjectId>((resolve, reject) => {
     const uploadStream = bucket.openUploadStream(filename, { contentType });
     uploadStream.on("error", reject);
@@ -45,8 +47,8 @@ export async function uploadBufferToGridFS(
   });
 }
 
-export async function readGridFSFileToBuffer(id: string): Promise<Buffer> {
-  const bucket = await getGridFSBucket();
+export async function readGridFSFileToBuffer(id: string, bucketName: string = DEFAULT_BUCKET): Promise<Buffer> {
+  const bucket = await getGridFSBucket(bucketName);
   return await new Promise<Buffer>((resolve, reject) => {
     const objectId = new ObjectId(id);
     const downloadStream = bucket.openDownloadStream(objectId);
@@ -57,4 +59,4 @@ export async function readGridFSFileToBuffer(id: string): Promise<Buffer> {
   });
 }
 
-export { ObjectId };
+export { ObjectId, DEFAULT_BUCKET };

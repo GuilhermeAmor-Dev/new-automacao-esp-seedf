@@ -46,8 +46,10 @@ router.post(
         try {
           let buffer: Buffer;
           if (file.fileData.startsWith("mongo:")) {
-            const id = file.fileData.replace("mongo:", "");
-            buffer = await readGridFSFileToBuffer(id);
+            const parts = file.fileData.split(":");
+            const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+            const objectId = parts.length === 3 ? parts[2] : parts[1];
+            buffer = await readGridFSFileToBuffer(objectId, bucketName);
           } else {
             buffer = Buffer.from(file.fileData, "base64");
           }
