@@ -73,6 +73,7 @@ type EspFormData = z.infer<typeof espFormSchema>;
 export default function EspEditor() {
   const [matchEsp, paramsEsp] = useRoute("/esp/:id/:tab?");
   const [matchCaderno, paramsCaderno] = useRoute("/caderno/:id/:tab?");
+  const isCadernoMode = !!matchCaderno;
   const espId = matchEsp ? paramsEsp?.id : paramsCaderno?.id;
   const urlTab = (matchEsp ? paramsEsp?.tab : paramsCaderno?.tab) || "identificacao";
   const [activeTab, setActiveTab] = useState(urlTab);
@@ -89,8 +90,9 @@ export default function EspEditor() {
     setActiveTab(urlTab);
   }, [urlTab]);
 
-  // Determine if creating new ESP
-  const isNewEsp = espId === "novo";
+  // Determine if creating new ESP or Caderno
+  const isNewEsp = !isCadernoMode && espId === "novo";
+  const isNewCaderno = isCadernoMode && espId === "novo";
 
   // Fetch cadernos for creating new ESP
   const { data: cadernosData } = useQuery({
@@ -119,7 +121,22 @@ export default function EspEditor() {
       if (!response.ok) throw new Error("Erro ao carregar ESP");
       return response.json();
     },
-    enabled: !!espId && !isNewEsp,
+    enabled: !!espId && !isNewEsp && !isCadernoMode,
+  });
+
+  // Load Caderno when in caderno mode
+  const { data: cadernoData, isLoading: isLoadingCaderno } = useQuery({
+    queryKey: ["/api/cadernos", espId],
+    queryFn: async () => {
+      const token = localStorage.getItem("esp_auth_token");
+      const response = await fetch(`/api/cadernos/${espId}`, {
+        credentials: "include",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("Erro ao carregar Caderno");
+      return response.json();
+    },
+    enabled: !!espId && isCadernoMode && !isNewCaderno,
   });
 
   // Fetch Fichas de Recebimento catalog data
@@ -267,7 +284,41 @@ export default function EspEditor() {
 
   // Update form when ESP data loads
   useEffect(() => {
-    if (esp) {
+    if (isCadernoMode && cadernoData?.caderno) {
+      form.reset({
+        codigo: "",
+        titulo: cadernoData.caderno.titulo || "",
+        tipologia: "",
+        revisao: "",
+        dataPublicacao: undefined,
+        selo: Selo.NENHUM,
+        visivel: true,
+        descricaoAplicacao: cadernoData.caderno.descricao || "",
+        execucao: "",
+        fichasReferencia: "",
+        recebimento: "",
+        servicosIncluidos: "",
+        criteriosMedicao: "",
+        legislacao: "",
+        referencias: "",
+        introduzirComponente: "",
+        constituentesIds: [],
+        acessoriosIds: [],
+        acabamentosIds: [],
+        prototiposIds: [],
+        aplicacoesIds: [],
+        constituintesExecucaoIds: [],
+        fichasReferenciaIds: [],
+        fichasRecebimentoIds: [],
+        servicosIncluidosIds: [],
+      }, { keepDefaultValues: false });
+      setNumConstituintesExecucao(1);
+      setNumFichasReferencia(1);
+      setNumFichasRecebimento(1);
+      setNumServicosIncluidos(1);
+      return;
+    }
+    if (!isCadernoMode && esp) {
       console.log("ESP data loaded, populating form:", esp);
       form.reset({
         codigo: esp.codigo || "",
@@ -302,14 +353,12 @@ export default function EspEditor() {
       const fichasIds = esp.fichasReferenciaIds || [];
       const recebimentoIds = esp.fichasRecebimentoIds || [];
       const servicosIds = esp.servicosIncluidosIds || [];
-      console.log("ESP loaded - servicosIncluidosIds:", esp.servicosIncluidosIds, "length:", servicosIds.length);
       setNumConstituintesExecucao(Math.max(1, execucaoIds.length));
       setNumFichasReferencia(Math.max(1, fichasIds.length));
       setNumFichasRecebimento(Math.max(1, recebimentoIds.length));
       setNumServicosIncluidos(Math.max(1, servicosIds.length));
-      console.log("Set numServicosIncluidos to:", Math.max(1, servicosIds.length));
     }
-  }, [esp]);
+  }, [esp, isCadernoMode, cadernoData, form]);
 
   // Create/Update mutation
   const updateMutation = useMutation({
@@ -385,9 +434,53 @@ export default function EspEditor() {
   };
 
   const handleSave = () => {
-    form.handleSubmit((data) => {
-      updateMutation.mutate(data);
-    })();
+    if (isCadernoMode) {
+      const titulo = form.getValues("titulo");
+      const descricao = form.getValues("descricaoAplicacao") || "";
+      if (!titulo) {
+        toast({ title: "Título é obrigatório para o caderno", variant: "destructive" });
+        return;
+      }
+      (async () => {
+        try {
+          const token = localStorage.getItem("esp_auth_token");
+          const url = isNewCaderno ? "/api/cadernos" : `/api/cadernos/${espId}`;
+          const method = isNewCaderno ? "POST" : "PATCH";
+          const res = await fetch(url, {
+            method,
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              titulo,
+              descricao,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || "Erro ao salvar caderno");
+          }
+          toast({ title: "Caderno salvo", description: "Dados gravados com sucesso." });
+          queryClient.invalidateQueries({ queryKey: ["/api", "cadernos"] });
+          if (isNewCaderno) {
+            const data = await res.json();
+            if (data?.caderno?.id) {
+              setLocation(`/caderno/${data.caderno.id}/identificacao`);
+            } else {
+              setLocation("/dashboard");
+            }
+          }
+        } catch (err: any) {
+          toast({ title: "Erro ao salvar caderno", description: err.message || "Tente novamente", variant: "destructive" });
+        }
+      })();
+    } else {
+      form.handleSubmit((data) => {
+        updateMutation.mutate(data);
+      })();
+    }
   };
 
   const [isUploading, setIsUploading] = useState(false);
@@ -603,7 +696,7 @@ export default function EspEditor() {
     );
   }
 
-  if (error) {
+  if (error && !isCadernoMode) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">

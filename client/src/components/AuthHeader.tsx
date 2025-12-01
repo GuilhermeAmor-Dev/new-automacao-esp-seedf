@@ -1,6 +1,7 @@
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoGdf from "@/images/logo gdf.png";
+import { Link } from "wouter";
 
 interface AuthHeaderProps {
   userName?: string;
@@ -14,16 +15,17 @@ export function AuthHeader({ userName, userRole, onLogout }: AuthHeaderProps) {
       <div className="bg-institutional-blue px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div
-              className="h-9 w-28 rounded-md bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden"
-              aria-label="Logo do Governo do Distrito Federal"
-            >
-              <img
-                src={logoGdf}
-                alt="Logo do Governo do Distrito Federal"
-                className="h-full w-full object-contain"
-              />
-            </div>
+            <Link href="/dashboard" aria-label="Voltar para o Dashboard">
+              <div
+                className="h-9 w-28 rounded-md bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden hover:bg-white/15 transition-colors"
+              >
+                <img
+                  src={logoGdf}
+                  alt="Logo do Governo do Distrito Federal"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            </Link>
             <span className="text-white text-sm">Sistema ESP / SEEDF</span>
           </div>
           

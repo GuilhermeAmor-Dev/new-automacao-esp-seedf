@@ -318,11 +318,36 @@ export default function Dashboard() {
                         Autor: {caderno.autor?.nome} | Status: {caderno.status}
                       </p>
                     </div>
-                    <Link href={`/caderno/${caderno.id}/identificacao`}>
-                      <Button variant="outline" size="sm" data-testid={`button-view-caderno-${caderno.id}`}>
-                        Ver Detalhes
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/caderno/${caderno.id}/identificacao`}>
+                        <Button variant="outline" size="sm" data-testid={`button-edit-caderno-${caderno.id}`}>
+                          Editar
+                        </Button>
+                      </Link>
+                      {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-delete-caderno-${caderno.id}`}
+                          onClick={async () => {
+                            if (!confirm("Deseja excluir este caderno?")) return;
+                            const token = localStorage.getItem("esp_auth_token");
+                            const res = await fetch(`/api/cadernos/${caderno.id}`, {
+                              method: "DELETE",
+                              credentials: "include",
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (!res.ok) {
+                              alert("Erro ao excluir caderno");
+                            } else {
+                              queryClient.invalidateQueries({ queryKey: ["/api", "cadernos"] });
+                            }
+                          }}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -373,11 +398,36 @@ export default function Dashboard() {
                         Autor: {esp.autor?.nome}
                       </p>
                     </div>
-                    <Link href={`/esp/${esp.id}/identificacao`}>
-                      <Button variant="default" size="sm" data-testid={`button-edit-esp-${esp.id}`}>
-                        Editar
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/esp/${esp.id}/identificacao`}>
+                        <Button variant="default" size="sm" data-testid={`button-edit-esp-${esp.id}`}>
+                          Editar
+                        </Button>
+                      </Link>
+                      {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-delete-esp-${esp.id}`}
+                          onClick={async () => {
+                            if (!confirm("Deseja excluir esta ESP?")) return;
+                            const token = localStorage.getItem("esp_auth_token");
+                            const res = await fetch(`/api/esp/${esp.id}`, {
+                              method: "DELETE",
+                              credentials: "include",
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (!res.ok) {
+                              alert("Erro ao excluir ESP");
+                            } else {
+                              queryClient.invalidateQueries({ queryKey: ["/api/esp"] });
+                            }
+                          }}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
