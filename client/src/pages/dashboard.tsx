@@ -146,7 +146,7 @@ export default function Dashboard() {
             </Button>
           </Link>
           
-          <Link href="/esp/novo">
+          <Link href="/caderno/novo">
             <Button
               variant="default"
               className="gap-2 bg-institutional-blue hover:bg-institutional-blue/90"
@@ -318,9 +318,11 @@ export default function Dashboard() {
                         Autor: {caderno.autor?.nome} | Status: {caderno.status}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" data-testid={`button-view-caderno-${caderno.id}`}>
-                      Ver Detalhes
-                    </Button>
+                    <Link href={`/caderno/${caderno.id}/identificacao`}>
+                      <Button variant="outline" size="sm" data-testid={`button-view-caderno-${caderno.id}`}>
+                        Ver Detalhes
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -343,7 +345,7 @@ export default function Dashboard() {
               <p className="text-muted-foreground">
                 Comece criando sua primeira especificação
               </p>
-              <Link href="/esp/novo">
+              <Link href="/nova-esp">
                 <InstitutionalButton
                   variant="primary"
                   className="gap-2"

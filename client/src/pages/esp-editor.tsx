@@ -71,11 +71,12 @@ const espFormSchema = z.object({
 type EspFormData = z.infer<typeof espFormSchema>;
 
 export default function EspEditor() {
-  const [, params] = useRoute("/esp/:id/:tab?");
-  const espId = params?.id;
-  const urlTab = params?.tab || "identificacao";
+  const [matchEsp, paramsEsp] = useRoute("/esp/:id/:tab?");
+  const [matchCaderno, paramsCaderno] = useRoute("/caderno/:id/:tab?");
+  const espId = matchEsp ? paramsEsp?.id : paramsCaderno?.id;
+  const urlTab = (matchEsp ? paramsEsp?.tab : paramsCaderno?.tab) || "identificacao";
   const [activeTab, setActiveTab] = useState(urlTab);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const user = getAuthUser();
   const [numConstituintesExecucao, setNumConstituintesExecucao] = useState(1);
@@ -345,8 +346,9 @@ export default function EspEditor() {
       queryClient.invalidateQueries({ queryKey: ["/api/esp"] });
       
       if (isNewEsp && data.esp?.id) {
-        // Redirect to the newly created ESP
-        setLocation(`/esp/${data.esp.id}/identificacao`);
+        // Redirect to the newly created item using the same prefix used to open
+        const prefix = location.startsWith("/caderno") ? "/caderno" : "/esp";
+        setLocation(`${prefix}/${data.esp.id}/identificacao`);
       }
       
       toast({
