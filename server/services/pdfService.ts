@@ -3,7 +3,8 @@ import { Esp, UserWithoutPassword } from "@shared/schema";
 
 export async function generateEspPdf(
   esp: Esp,
-  autor: UserWithoutPassword
+  autor: UserWithoutPassword,
+  images?: { filename: string; buffer: Buffer }[]
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -71,6 +72,26 @@ export async function generateEspPdf(
           doc.moveDown(1.5);
         }
       });
+
+      // Project images
+      if (images && images.length > 0) {
+        images.forEach((img, index) => {
+          doc.addPage();
+          doc.fontSize(12).fillColor("#0361ad").text("PROJETOS", { underline: true });
+          doc.moveDown(0.5);
+          doc.fontSize(10).fillColor("#000000").text(img.filename || `Imagem ${index + 1}`);
+          doc.moveDown(0.5);
+          try {
+            doc.image(img.buffer, {
+              fit: [500, 500],
+              align: "center",
+              valign: "center",
+            });
+          } catch {
+            doc.fontSize(10).fillColor("#ff0000").text("Erro ao carregar imagem.");
+          }
+        });
+      }
 
       // Footer
       doc

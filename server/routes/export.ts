@@ -7,6 +7,8 @@ import { validateParams } from "../middleware/validate";
 import { generateEspPdf } from "../services/pdfService";
 import { generateEspDocx } from "../services/docxService";
 import { logger } from "../utils/logger";
+import { readGridFSFileToBuffer } from "../mongo";
+import { TipoArquivo } from "@shared/schema";
 
 const router = Router();
 
@@ -36,7 +38,26 @@ router.post(
         return res.status(404).json({ error: "Autor não encontrado" });
       }
 
-      const pdfBuffer = await generateEspPdf(esp, autor);
+      // Buscar arquivos de projeto (imagens)
+      const files = await storage.getArquivosMidiaByEsp(esp.id);
+      const images: { filename: string; buffer: Buffer }[] = [];
+      for (const file of files) {
+        if (file.tipo !== TipoArquivo.IMAGEM) continue;
+        try {
+          let buffer: Buffer;
+          if (file.fileData.startsWith("mongo:")) {
+            const id = file.fileData.replace("mongo:", "");
+            buffer = await readGridFSFileToBuffer(id);
+          } else {
+            buffer = Buffer.from(file.fileData, "base64");
+          }
+          images.push({ filename: file.filename, buffer });
+        } catch (err) {
+          logger.error("Error loading image for PDF", { fileId: file.id, err });
+        }
+      }
+
+      const pdfBuffer = await generateEspPdf(esp, autor, images);
 
       await storage.createLog({
         userId: req.user.id,
