@@ -810,7 +810,7 @@ export default function EspEditor() {
   const [isUploading, setIsUploading] = useState(false);
 
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  const exportDisabled = isNewEsp || isCadernoMode;
+  const exportDisabled = !ownerId || ownerId === "novo";
 
 
 
@@ -1070,9 +1070,7 @@ export default function EspEditor() {
     if (exportDisabled) {
       toast({
         title: "Exporta��ǜo indispon��vel",
-        description: isCadernoMode
-          ? "Exporte PDFs apenas para ESPs. Finalize a ESP ou utilize a tela de exporta��ǜo espec��fica."
-          : "Salve a ESP antes de exportar.",
+        description: "Salve o registro antes de exportar.",
         variant: "destructive",
       });
       return;
@@ -1082,7 +1080,11 @@ export default function EspEditor() {
 
       const token = localStorage.getItem("esp_auth_token");
 
-      const response = await fetch(`/api/export/pdf/${espId}`, {
+      const url = isCadernoMode
+        ? `/api/export/pdf-caderno/${ownerId}`
+        : `/api/export/pdf/${ownerId}`;
+
+      const response = await fetch(url, {
 
         method: "POST",
 
@@ -1100,19 +1102,22 @@ export default function EspEditor() {
 
       const blob = await response.blob();
 
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
 
-      a.href = url;
+      a.href = downloadUrl;
 
-      a.download = `${esp?.codigo || "ESP"}.pdf`;
+      const filename = isCadernoMode
+        ? `${cadernoData?.caderno?.titulo || "CADERNO"}.pdf`
+        : `${esp?.codigo || "ESP"}.pdf`;
+      a.download = filename;
 
       document.body.appendChild(a);
 
       a.click();
 
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
 
       document.body.removeChild(a);
 
@@ -1148,9 +1153,7 @@ export default function EspEditor() {
     if (exportDisabled) {
       toast({
         title: "Exporta��ǜo indispon��vel",
-        description: isCadernoMode
-          ? "Exporta��ǜo habilitada somente para ESPs."
-          : "Salve a ESP antes de exportar.",
+        description: "Salve o registro antes de exportar.",
         variant: "destructive",
       });
       return;
@@ -1160,7 +1163,11 @@ export default function EspEditor() {
 
       const token = localStorage.getItem("esp_auth_token");
 
-      const response = await fetch(`/api/export/docx/${espId}`, {
+      const url = isCadernoMode
+        ? `/api/export/docx-caderno/${ownerId}`
+        : `/api/export/docx/${ownerId}`;
+
+      const response = await fetch(url, {
 
         method: "POST",
 
@@ -1178,19 +1185,22 @@ export default function EspEditor() {
 
       const blob = await response.blob();
 
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
 
-      a.href = url;
+      a.href = downloadUrl;
 
-      a.download = `${esp?.codigo || "ESP"}.docx`;
+      const filename = isCadernoMode
+        ? `${cadernoData?.caderno?.titulo || "CADERNO"}.docx`
+        : `${esp?.codigo || "ESP"}.docx`;
+      a.download = filename;
 
       document.body.appendChild(a);
 
       a.click();
 
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
 
       document.body.removeChild(a);
 

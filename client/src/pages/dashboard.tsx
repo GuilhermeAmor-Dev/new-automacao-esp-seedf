@@ -13,6 +13,7 @@ import { CalendarIcon, FileText, Plus, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   // Filter states
@@ -112,6 +113,31 @@ export default function Dashboard() {
       localStorage.removeItem("esp_auth_user");
       localStorage.removeItem("esp_auth_token");
       setLocation("/login");
+    }
+  };
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const token = localStorage.getItem("esp_auth_token");
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        throw new Error("Falha ao exportar");
+      }
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err?.message || "Erro ao exportar");
     }
   };
 
@@ -324,6 +350,20 @@ export default function Dashboard() {
                           Editar
                         </Button>
                       </Link>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-institutional-blue hover:bg-institutional-blue/90"
+                        data-testid={`button-export-caderno-${caderno.id}`}
+                        onClick={() =>
+                          handleDownload(
+                            `/api/export/pdf-caderno/${caderno.id}`,
+                            `${caderno.titulo || "caderno"}.pdf`
+                          )
+                        }
+                      >
+                        Exportar PDF
+                      </Button>
                       {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
                         <Button
                           variant="outline"
@@ -404,6 +444,20 @@ export default function Dashboard() {
                           Editar
                         </Button>
                       </Link>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-institutional-blue hover:bg-institutional-blue/90"
+                        data-testid={`button-export-esp-${esp.id}`}
+                        onClick={() =>
+                          handleDownload(
+                            `/api/export/pdf/${esp.id}`,
+                            `${esp.codigo || "ESP"}.pdf`
+                          )
+                        }
+                      >
+                        Exportar PDF
+                      </Button>
                       {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
                         <Button
                           variant="outline"

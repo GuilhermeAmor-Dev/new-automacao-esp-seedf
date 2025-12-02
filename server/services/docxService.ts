@@ -1,5 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
-import { Esp, UserWithoutPassword } from "@shared/schema";
+import { Esp, Caderno, UserWithoutPassword } from "@shared/schema";
 
 export async function generateEspDocx(
   esp: Esp,
@@ -209,4 +209,67 @@ export async function generateEspDocx(
   });
 
   return await Packer.toBuffer(doc);
+}
+
+export async function generateCadernoDocx(
+  caderno: Caderno,
+  autor: UserWithoutPassword
+): Promise<Buffer> {
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "SEEDF - Sistema ESP",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Caderno`,
+                bold: true,
+                size: 28,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            text: caderno.titulo,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          }),
+          new Paragraph({
+            text: "INFORMAÇÕES DO CADERNO",
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 200 },
+          }),
+          new Paragraph({ text: `Título: ${caderno.titulo}`, spacing: { after: 100 } }),
+          new Paragraph({ text: `Status: ${caderno.status}`, spacing: { after: 100 } }),
+          new Paragraph({ text: `Autor: ${autor.nome}`, spacing: { after: 100 } }),
+          new Paragraph({ text: `Criado em: ${new Date(caderno.createdAt).toLocaleDateString("pt-BR")}`, spacing: { after: 100 } }),
+          new Paragraph({ text: `Atualizado em: ${new Date(caderno.updatedAt).toLocaleDateString("pt-BR")}`, spacing: { after: 400 } }),
+          ...(caderno.descricao
+            ? [
+                new Paragraph({
+                  text: "DESCRIÇÃO",
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 200, after: 200 },
+                }),
+                new Paragraph({
+                  text: caderno.descricao,
+                  spacing: { after: 200 },
+                }),
+              ]
+            : []),
+        ],
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  return buffer;
 }

@@ -4,8 +4,8 @@ import { storage } from "../storage";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { requireRole, Permissions } from "../middleware/rbac";
 import { validateParams } from "../middleware/validate";
-import { generateEspPdf } from "../services/pdfService";
-import { generateEspDocx } from "../services/docxService";
+import { generateEspPdf, generateCadernoPdf } from "../services/pdfService";
+import { generateEspDocx, generateCadernoDocx } from "../services/docxService";
 import { logger } from "../utils/logger";
 import { readGridFSFileToBuffer } from "../mongo";
 import { TipoArquivo } from "@shared/schema";
@@ -14,6 +14,9 @@ const router = Router();
 
 const paramsSchema = z.object({
   espId: z.string(),
+});
+const cadernoParamsSchema = z.object({
+  cadernoId: z.string(),
 });
 
 // POST /api/export/pdf/:espId
@@ -134,6 +137,70 @@ router.post(
   }
 );
 
+// POST /api/export/pdf-caderno/:cadernoId
+router.post(
+  "/pdf-caderno/:cadernoId",
+  authenticateToken,
+  requireRole(...Permissions.exportPdf),
+  validateParams(cadernoParamsSchema),
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Nǜo autenticado" });
+      }
+
+      const caderno = await storage.getCaderno(req.params.cadernoId);
+      if (!caderno) {
+        return res.status(404).json({ error: "Caderno nǜo encontrado" });
+      }
+
+      const autor = await storage.getUserWithoutPassword(caderno.autorId);
+      if (!autor) {
+        return res.status(404).json({ error: "Autor nǜo encontrado" });
+      }
+
+      // Buscar arquivos vinculados ao caderno
+      const files = await storage.getArquivosMidiaByCaderno(caderno.id);
+      const images: { filename: string; buffer: Buffer }[] = [];
+      for (const file of files) {
+        if (file.tipo !== TipoArquivo.IMAGEM) continue;
+        try {
+          let buffer: Buffer;
+          if (file.fileData.startsWith("mongo:")) {
+            const parts = file.fileData.split(":");
+            const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+            const objectId = parts.length === 3 ? parts[2] : parts[1];
+            buffer = await readGridFSFileToBuffer(objectId, bucketName);
+          } else {
+            buffer = Buffer.from(file.fileData, "base64");
+          }
+          images.push({ filename: file.filename, buffer });
+        } catch (err) {
+          logger.error("Error loading image for Caderno PDF", { fileId: file.id, err });
+        }
+      }
+
+      const pdfBuffer = await generateCadernoPdf(caderno, { autor, images });
+
+      await storage.createLog({
+        userId: req.user.id,
+        acao: "EXPORTAR_PDF",
+        alvo: caderno.id,
+        detalhes: `PDF exportado para Caderno "${caderno.titulo}"`,
+      });
+
+      logger.info("PDF caderno exported", { cadernoId: caderno.id, userId: req.user.id });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${caderno.titulo}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      logger.error("Error exporting Caderno PDF", { error });
+      res.status(500).json({ error: "Erro ao exportar PDF do caderno" });
+    }
+  }
+);
+
 // POST /api/export/docx/:espId
 router.post(
   "/docx/:espId",
@@ -176,6 +243,52 @@ router.post(
     } catch (error) {
       logger.error("Error exporting DOCX", { error });
       res.status(500).json({ error: "Erro ao exportar DOCX" });
+    }
+  }
+);
+
+// POST /api/export/docx-caderno/:cadernoId
+router.post(
+  "/docx-caderno/:cadernoId",
+  authenticateToken,
+  requireRole(...Permissions.exportDocx),
+  validateParams(cadernoParamsSchema),
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Nǜo autenticado" });
+      }
+
+      const caderno = await storage.getCaderno(req.params.cadernoId);
+      if (!caderno) {
+        return res.status(404).json({ error: "Caderno nǜo encontrado" });
+      }
+
+      const autor = await storage.getUserWithoutPassword(caderno.autorId);
+      if (!autor) {
+        return res.status(404).json({ error: "Autor nǜo encontrado" });
+      }
+
+      const docxBuffer = await generateCadernoDocx(caderno, autor);
+
+      await storage.createLog({
+        userId: req.user.id,
+        acao: "EXPORTAR_DOCX",
+        alvo: caderno.id,
+        detalhes: `DOCX exportado para Caderno "${caderno.titulo}"`,
+      });
+
+      logger.info("DOCX caderno exported", { cadernoId: caderno.id, userId: req.user.id });
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${caderno.titulo}.docx"`);
+      res.send(docxBuffer);
+    } catch (error) {
+      logger.error("Error exporting Caderno DOCX", { error });
+      res.status(500).json({ error: "Erro ao exportar DOCX do caderno" });
     }
   }
 );

@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import { Esp, UserWithoutPassword } from "@shared/schema";
+import { Esp, Caderno, UserWithoutPassword } from "@shared/schema";
 
 type ItemLookup = (ids?: string[] | null) => Promise<string>;
 
@@ -171,6 +171,84 @@ export async function generateEspPdf(
           doc.end();
         }
       ).catch(reject);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export async function generateCadernoPdf(
+  caderno: Caderno,
+  {
+    autor,
+    images,
+  }: {
+    autor: UserWithoutPassword;
+    images?: { filename: string; buffer: Buffer }[];
+  }
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      });
+
+      const buffers: Buffer[] = [];
+      doc.on("data", buffers.push.bind(buffers));
+      doc.on("end", () => resolve(Buffer.concat(buffers)));
+
+      doc.fontSize(20).fillColor("#0361ad").text("SEEDF - Sistema ESP", { align: "center" }).moveDown();
+      doc.fontSize(16).fillColor("#000").text(`Caderno`, { align: "center" }).moveDown(0.5);
+      doc.fontSize(14).text(caderno.titulo, { align: "center" }).moveDown(2);
+
+      doc.fontSize(12).fillColor("#0361ad").text("INFORMAÇÕES DO CADERNO", { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor("#000");
+      doc.text(`Título: ${caderno.titulo}`);
+      doc.text(`Status: ${caderno.status}`);
+      doc.text(`Autor: ${autor.nome}`);
+      doc.text(`Criado em: ${new Date(caderno.createdAt).toLocaleDateString("pt-BR")}`);
+      doc.text(`Atualizado em: ${new Date(caderno.updatedAt).toLocaleDateString("pt-BR")}`);
+      doc.moveDown(1.5);
+
+      if (caderno.descricao) {
+        doc.fontSize(12).fillColor("#0361ad").text("DESCRIÇÃO", { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor("#000").text(caderno.descricao);
+        doc.moveDown(1.5);
+      }
+
+      if (images && images.length > 0) {
+        images.forEach((img, index) => {
+          doc.addPage();
+          doc.fontSize(12).fillColor("#0361ad").text("PROJETOS", { underline: true });
+          doc.moveDown(0.5);
+          doc.fontSize(10).fillColor("#000").text(img.filename || `Imagem ${index + 1}`);
+          doc.moveDown(0.5);
+          try {
+            doc.image(img.buffer, {
+              fit: [500, 500],
+              align: "center",
+              valign: "center",
+            });
+          } catch {
+            doc.fontSize(10).fillColor("#ff0000").text("Erro ao carregar imagem.");
+          }
+        });
+      }
+
+      doc
+        .fontSize(8)
+        .fillColor("#666")
+        .text(
+          `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+          50,
+          doc.page.height - 50,
+          { align: "center" }
+        );
+
+      doc.end();
     } catch (error) {
       reject(error);
     }
