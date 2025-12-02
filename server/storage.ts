@@ -46,7 +46,7 @@ import {
   itensEspecificacao,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -311,12 +311,27 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(arquivosMidia).where(eq(arquivosMidia.espId, espId));
   }
 
+  async getArquivosMidiaByCaderno(cadernoId: string): Promise<ArquivoMidia[]> {
+    return await db.select().from(arquivosMidia).where(eq(arquivosMidia.cadernoId, cadernoId));
+  }
+
+  async getArquivosMidiaByOwner(ownerId: string): Promise<ArquivoMidia[]> {
+    return await db
+      .select()
+      .from(arquivosMidia)
+      .where(or(eq(arquivosMidia.espId, ownerId), eq(arquivosMidia.cadernoId, ownerId)));
+  }
+
   async createArquivoMidia(insertArquivo: InsertArquivoMidia): Promise<ArquivoMidia> {
     const id = randomUUID();
     const now = new Date();
+    if (!insertArquivo.espId && !insertArquivo.cadernoId) {
+      throw new Error("espId ou cadernoId � obrigat�rio para salvar arquivo");
+    }
     const values: ArquivoMidia = {
       id,
-      espId: insertArquivo.espId,
+      espId: insertArquivo.espId ?? null,
+      cadernoId: insertArquivo.cadernoId ?? null,
       tipo: insertArquivo.tipo as TipoArquivo,
       filename: insertArquivo.filename,
       contentType: insertArquivo.contentType,

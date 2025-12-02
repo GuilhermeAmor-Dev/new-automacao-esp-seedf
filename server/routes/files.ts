@@ -55,16 +55,24 @@ router.post(
         return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
-      const { espId } = req.body;
-      if (!espId) {
-        logger.error("ESP ID missing from request body", { body: req.body });
-        return res.status(400).json({ error: "ESP ID é obrigatório" });
+      const { espId, cadernoId } = req.body;
+      if (!espId && !cadernoId) {
+        logger.error("Owner missing from request body", { body: req.body });
+        return res.status(400).json({ error: "Informe espId ou cadernoId" });
       }
 
-      // Verify ESP exists
-      const esp = await storage.getEsp(espId);
-      if (!esp) {
-        return res.status(404).json({ error: "ESP não encontrada" });
+      if (espId) {
+        const esp = await storage.getEsp(espId);
+        if (!esp) {
+          return res.status(404).json({ error: "ESP não encontrada" });
+        }
+      }
+
+      if (!espId && cadernoId) {
+        const caderno = await storage.getCaderno(cadernoId);
+        if (!caderno) {
+          return res.status(404).json({ error: "Caderno não encontrado" });
+        }
       }
 
       const uploadedFiles = [];
@@ -95,7 +103,8 @@ router.post(
 
         // Save file to database
         const arquivoMidia = await storage.createArquivoMidia({
-          espId,
+          espId: espId || null,
+          cadernoId: espId ? null : cadernoId,
           tipo,
           filename: file.originalname,
           contentType: file.mimetype,
@@ -110,14 +119,15 @@ router.post(
         await storage.createLog({
           userId: req.user.id,
           acao: "UPLOAD_ARQUIVO",
-          alvo: espId,
-          detalhes: `Arquivo "${file.originalname}" enviado para ESP`,
+          alvo: espId || cadernoId,
+          detalhes: `Arquivo "${file.originalname}" enviado para ${espId ? "ESP" : "Caderno"}`,
         });
       }
 
       logger.info("Files uploaded", { 
         count: uploadedFiles.length, 
         espId, 
+        cadernoId,
         userId: req.user.id 
       });
 
@@ -148,10 +158,10 @@ router.use((error: any, req: any, res: any, next: any) => {
   next();
 });
 
-// GET /api/esp/:espId/files - List files for an ESP
+// GET /api/esp/:espId/files - List files for an ESP or Caderno (owner)
 router.get("/:espId/files", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const files = await storage.getArquivosMidiaByEsp(req.params.espId);
+    const files = await storage.getArquivosMidiaByOwner(req.params.espId);
     
     // Don't return fileData in list (too large)
     const filesResponse = files.map(({ fileData, ...file }) => file);
@@ -252,7 +262,7 @@ router.delete("/:id", authenticateToken, requireRole(...Permissions.createEsp), 
     await storage.createLog({
       userId: req.user.id,
       acao: "DELETE_ARQUIVO",
-      alvo: arquivo.espId,
+      alvo: arquivo.espId || arquivo.cadernoId || arquivo.id,
       detalhes: `Arquivo "${arquivo.filename}" deletado`,
     });
 

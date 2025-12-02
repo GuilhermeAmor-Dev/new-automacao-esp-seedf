@@ -59,7 +59,61 @@ router.post(
         }
       }
 
-      const pdfBuffer = await generateEspPdf(esp, autor, images);
+      const [
+        constituintes,
+        acessorios,
+        acabamentos,
+        prototipos,
+        aplicacoes,
+        fichasRecebimento,
+        servicosIncluidosCatalog,
+      ] = await Promise.all([
+        storage.getConstituintes(),
+        storage.getAcessorios(),
+        storage.getAcabamentos(),
+        storage.getPrototiposComerciais(),
+        storage.getAplicacoes(),
+        storage.getFichasRecebimento(),
+        storage.getServicosIncluidos(),
+      ]);
+
+      const toBullets = (values: string[]) =>
+        values.filter(Boolean).map((value) => `• ${value}`).join("\n");
+
+      const makeLookup = <T extends { id: string }>(
+        items: T[],
+        getLabel: (item: T) => string
+      ) => {
+        const map = new Map(items.map((item) => [item.id, getLabel(item)]));
+        return async (ids?: string[] | null) => {
+          if (!ids?.length) return "";
+          const labels = ids
+            .map((id) => map.get(id))
+            .filter(Boolean) as string[];
+          return toBullets(labels);
+        };
+      };
+
+      const pdfBuffer = await generateEspPdf(esp, {
+        autor,
+        images,
+        getConstituintesText: makeLookup(constituintes, (item) => item.nome),
+        getAcessoriosText: makeLookup(acessorios, (item) => item.nome),
+        getAcabamentosText: makeLookup(acabamentos, (item) => item.nome),
+        getPrototiposText: makeLookup(
+          prototipos,
+          (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
+        ),
+        getAplicacoesText: makeLookup(aplicacoes, (item) => item.nome),
+        getFichasRecebimentoText: makeLookup(
+          fichasRecebimento,
+          (item) => item.nome
+        ),
+        getServicosIncluidosText: makeLookup(
+          servicosIncluidosCatalog,
+          (item) => (item.descricao ? `${item.nome} - ${item.descricao}` : item.nome)
+        ),
+      });
 
       await storage.createLog({
         userId: req.user.id,

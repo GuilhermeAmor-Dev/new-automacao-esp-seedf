@@ -298,7 +298,8 @@ export type Versao = typeof versoes.$inferSelect;
 // ArquivoMidia model
 export const arquivosMidia = pgTable("arquivos_midia", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  espId: varchar("esp_id", { length: 36 }).notNull().references(() => esps.id),
+  espId: varchar("esp_id", { length: 36 }).references(() => esps.id),
+  cadernoId: varchar("caderno_id", { length: 36 }).references(() => cadernos.id),
   tipo: text("tipo").notNull().$type<TipoArquivo>(),
   filename: text("filename").notNull(),
   contentType: text("content_type").notNull(),
