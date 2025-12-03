@@ -177,14 +177,26 @@ export async function generateEspPdf(
   });
 }
 
+type LookupMap = {
+  getConstituintesText?: ItemLookup;
+  getAcessoriosText?: ItemLookup;
+  getAcabamentosText?: ItemLookup;
+  getPrototiposText?: ItemLookup;
+  getAplicacoesText?: ItemLookup;
+  getServicosIncluidosText?: ItemLookup;
+  getFichasRecebimentoText?: ItemLookup;
+};
+
 export async function generateCadernoPdf(
   caderno: Caderno,
   {
     autor,
     images,
+    lookups,
   }: {
     autor: UserWithoutPassword;
     images?: { filename: string; buffer: Buffer }[];
+    lookups?: LookupMap;
   }
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -219,36 +231,105 @@ export async function generateCadernoPdf(
         doc.moveDown(1.5);
       }
 
-      if (images && images.length > 0) {
-        images.forEach((img, index) => {
-          doc.addPage();
-          doc.fontSize(12).fillColor("#0361ad").text("PROJETOS", { underline: true });
-          doc.moveDown(0.5);
-          doc.fontSize(10).fillColor("#000").text(img.filename || `Imagem ${index + 1}`);
-          doc.moveDown(0.5);
-          try {
-            doc.image(img.buffer, {
-              fit: [500, 500],
-              align: "center",
-              valign: "center",
+      // Build dynamic sections using lookups, similar to ESP
+      const descAplicacaoParts: string[] = [];
+      const execParts: string[] = [];
+      const recebParts: string[] = [];
+      const servicosParts: string[] = [];
+
+      const addIf = (txt?: string | null) => (txt && txt.trim() ? txt.trim() : undefined);
+
+      Promise.all([
+        lookups?.getConstituintesText?.(caderno.constituentesIds),
+        lookups?.getAcessoriosText?.(caderno.acessoriosIds),
+        lookups?.getAcabamentosText?.(caderno.acabamentosIds),
+        lookups?.getPrototiposText?.(caderno.prototiposIds),
+        lookups?.getAplicacoesText?.(caderno.aplicacoesIds),
+        lookups?.getConstituintesText?.(caderno.constituentesExecucaoIds),
+        lookups?.getFichasRecebimentoText?.(caderno.fichasRecebimentoIds),
+        lookups?.getServicosIncluidosText?.(caderno.servicosIncluidosIds),
+      ])
+        .then(
+          ([
+            constituinteTxt,
+            acessorioTxt,
+            acabamentoTxt,
+            prototipoTxt,
+            aplicacaoTxt,
+            execConstTxt,
+            recebTxt,
+            servicosTxt,
+          ]) => {
+            descAplicacaoParts.push(addIf(caderno.descricaoAplicacao) || "");
+            addIf(constituinteTxt) && descAplicacaoParts.push(`Constituintes:\n${constituinteTxt}`);
+            addIf(acessorioTxt) && descAplicacaoParts.push(`Acessórios:\n${acessorioTxt}`);
+            addIf(acabamentoTxt) && descAplicacaoParts.push(`Acabamentos:\n${acabamentoTxt}`);
+            addIf(prototipoTxt) && descAplicacaoParts.push(`Protótipo Comercial:\n${prototipoTxt}`);
+            addIf(aplicacaoTxt) && descAplicacaoParts.push(`Aplicação:\n${aplicacaoTxt}`);
+
+            execParts.push(addIf(caderno.execucao) || "");
+            addIf(execConstTxt) && execParts.push(`Constituintes (Execução):\n${execConstTxt}`);
+
+            recebParts.push(addIf(caderno.recebimento) || "");
+            addIf(recebTxt) && recebParts.push(`Fichas de Recebimento:\n${recebTxt}`);
+
+            servicosParts.push(addIf(caderno.servicosIncluidos) || "");
+            addIf(servicosTxt) && servicosParts.push(`Serviços da lista:\n${servicosTxt}`);
+
+            const sections = [
+              { title: "DESCRIÇÃO E APLICAÇÃO", content: descAplicacaoParts.filter(Boolean).join("\n\n") },
+              { title: "EXECUÇÃO", content: execParts.filter(Boolean).join("\n\n") },
+              { title: "FICHAS DE REFERÊNCIA", content: caderno.fichasReferencia },
+              { title: "RECEBIMENTO", content: recebParts.filter(Boolean).join("\n\n") },
+              { title: "SERVIÇOS INCLUÍDOS", content: servicosParts.filter(Boolean).join("\n\n") },
+              { title: "CRITÉRIOS DE MEDIÇÃO", content: caderno.criteriosMedicao },
+              { title: "LEGISLAÇÃO", content: caderno.legislacao },
+              { title: "REFERÊNCIAS", content: caderno.referencias },
+            ];
+
+            // Images right after identification
+            if (images && images.length > 0) {
+              images.forEach((img, index) => {
+                doc.addPage();
+                doc.fontSize(12).fillColor("#0361ad").text("PROJETOS", { underline: true });
+                doc.moveDown(0.5);
+                doc.fontSize(10).fillColor("#000").text(img.filename || `Imagem ${index + 1}`);
+                doc.moveDown(0.5);
+                try {
+                  doc.image(img.buffer, {
+                    fit: [500, 500],
+                    align: "center",
+                    valign: "center",
+                  });
+                } catch {
+                  doc.fontSize(10).fillColor("#ff0000").text("Erro ao carregar imagem.");
+                }
+              });
+            }
+
+            sections.forEach((section) => {
+              if (section.content) {
+                doc.fontSize(12).fillColor("#0361ad").text(section.title, { underline: true });
+                doc.moveDown(0.5);
+                doc.fontSize(10).fillColor("#000000").text(section.content);
+                doc.moveDown(1.5);
+              }
             });
-          } catch {
-            doc.fontSize(10).fillColor("#ff0000").text("Erro ao carregar imagem.");
+
+            doc
+              .fontSize(8)
+              .fillColor("#666")
+              .text(
+                `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+                50,
+                doc.page.height - 50,
+                { align: "center" }
+              );
+
+            doc.end();
           }
-        });
-      }
-
-      doc
-        .fontSize(8)
-        .fillColor("#666")
-        .text(
-          `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
-          50,
-          doc.page.height - 50,
-          { align: "center" }
-        );
-
-      doc.end();
+        )
+        .catch(reject);
     } catch (error) {
       reject(error);
     }

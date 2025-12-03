@@ -473,55 +473,31 @@ export default function EspEditor() {
     resolver: zodResolver(espFormSchema),
 
     defaultValues: {
-
       codigo: "",
-
       titulo: "",
-
       tipologia: "",
-
       revisao: "",
-
       selo: Selo.NENHUM,
-
       visivel: true,
-
       descricaoAplicacao: "",
-
       execucao: "",
-
       fichasReferencia: "",
-
       recebimento: "",
-
       servicosIncluidos: "",
-
       criteriosMedicao: "",
-
       legislacao: "",
-
       referencias: "",
       normas: "",
       introduzirComponente: "",
-
       constituentesIds: [],
-
       acessoriosIds: [],
-
       acabamentosIds: [],
-
       prototiposIds: [],
-
       aplicacoesIds: [],
-
-      constituintesExecucaoIds: [],
-
+      constituentesExecucaoIds: [],
       fichasReferenciaIds: [],
-
       fichasRecebimentoIds: [],
-
       servicosIncluidosIds: [],
-
     },
 
   });
@@ -540,30 +516,33 @@ export default function EspEditor() {
         dataPublicacao: undefined,
         selo: Selo.NENHUM,
         visivel: true,
-        descricaoAplicacao: cadernoData.caderno.descricao || "",
-        execucao: "",
-        fichasReferencia: "",
-        recebimento: "",
-        servicosIncluidos: "",
-        criteriosMedicao: "",
-        legislacao: "",
-      referencias: "",
-      normas: "",
-      introduzirComponente: "",
-        constituentesIds: [],
-        acessoriosIds: [],
-        acabamentosIds: [],
-        prototiposIds: [],
-        aplicacoesIds: [],
-        constituintesExecucaoIds: [],
-        fichasReferenciaIds: [],
-        fichasRecebimentoIds: [],
-        servicosIncluidosIds: [],
+        descricaoAplicacao: cadernoData.caderno.descricaoAplicacao || cadernoData.caderno.descricao || "",
+        execucao: cadernoData.caderno.execucao || "",
+        fichasReferencia: cadernoData.caderno.fichasReferencia || "",
+        recebimento: cadernoData.caderno.recebimento || "",
+        servicosIncluidos: cadernoData.caderno.servicosIncluidos || "",
+        criteriosMedicao: cadernoData.caderno.criteriosMedicao || "",
+        legislacao: cadernoData.caderno.legislacao || "",
+        referencias: cadernoData.caderno.referencias || "",
+        normas: (cadernoData.caderno as any).normas || "",
+        introduzirComponente: cadernoData.caderno.introduzirComponente || "",
+        constituentesIds: cadernoData.caderno.constituentesIds || [],
+        acessoriosIds: cadernoData.caderno.acessoriosIds || [],
+        acabamentosIds: cadernoData.caderno.acabamentosIds || [],
+        prototiposIds: cadernoData.caderno.prototiposIds || [],
+        aplicacoesIds: cadernoData.caderno.aplicacoesIds || [],
+        constituentesExecucaoIds: cadernoData.caderno.constituintesExecucaoIds || [],
+        fichasReferenciaIds: cadernoData.caderno.fichasReferenciaIds || [],
+        fichasRecebimentoIds: cadernoData.caderno.fichasRecebimentoIds || [],
+        servicosIncluidosIds: cadernoData.caderno.servicosIncluidosIds || [],
       }, { keepDefaultValues: false });
-      setNumConstituintesExecucao(1);
-      setNumFichasReferencia(1);
-      setNumFichasRecebimento(1);
-      setNumServicosIncluidos(1);
+      setNumConstituintesExecucao(Math.max(1, (cadernoData.caderno.constituintesExecucaoIds || []).length));
+      setNumFichasReferencia(Math.max(1, (cadernoData.caderno.fichasReferenciaIds || []).length));
+      setNumFichasRecebimento(Math.max(1, (cadernoData.caderno.fichasRecebimentoIds || []).length));
+      setNumServicosIncluidos(Math.max(1, (cadernoData.caderno.servicosIncluidosIds || []).length));
+      setLegislacoesSelecionadas((cadernoData.caderno.legislacao || "").split("\n").filter(Boolean).length ? (cadernoData.caderno.legislacao || "").split("\n").filter(Boolean) : [""]);
+      setReferenciasSelecionadas((cadernoData.caderno.referencias || "").split("\n").filter(Boolean).length ? (cadernoData.caderno.referencias || "").split("\n").filter(Boolean) : [""]);
+      setNormasSelecionadas(((cadernoData.caderno as any).normas || "").split("\n").filter(Boolean).length ? ((cadernoData.caderno as any).normas || "").split("\n").filter(Boolean) : [""]);
       return;
     }
     if (!isCadernoMode && esp) {
@@ -755,11 +734,32 @@ export default function EspEditor() {
   const handleSave = () => {
     if (isCadernoMode) {
       const titulo = form.getValues("titulo");
-      const descricao = form.getValues("descricaoAplicacao") || "";
       if (!titulo) {
         toast({ title: "Título é obrigatório para o caderno", variant: "destructive" });
         return;
       }
+      const payload = {
+        titulo,
+        descricao: form.getValues("descricaoAplicacao") || "",
+        descricaoAplicacao: form.getValues("descricaoAplicacao") || "",
+        execucao: form.getValues("execucao") || "",
+        fichasReferencia: form.getValues("fichasReferencia") || "",
+        recebimento: form.getValues("recebimento") || "",
+        servicosIncluidos: form.getValues("servicosIncluidos") || "",
+        criteriosMedicao: form.getValues("criteriosMedicao") || "",
+        legislacao: form.getValues("legislacao") || "",
+        referencias: form.getValues("referencias") || "",
+        introduzirComponente: form.getValues("introduzirComponente") || "",
+        constituentesIds: form.getValues("constituentesIds") || [],
+        acessoriosIds: form.getValues("acessoriosIds") || [],
+        acabamentosIds: form.getValues("acabamentosIds") || [],
+        prototiposIds: form.getValues("prototiposIds") || [],
+        aplicacoesIds: form.getValues("aplicacoesIds") || [],
+        constituentesExecucaoIds: form.getValues("constituentesExecucaoIds") || [],
+        fichasReferenciaIds: form.getValues("fichasReferenciaIds") || [],
+        fichasRecebimentoIds: form.getValues("fichasRecebimentoIds") || [],
+        servicosIncluidosIds: form.getValues("servicosIncluidosIds") || [],
+      };
       (async () => {
         try {
           const token = localStorage.getItem("esp_auth_token");
@@ -772,24 +772,17 @@ export default function EspEditor() {
               "Content-Type": "application/json",
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({
-              titulo,
-              descricao,
-            }),
+            body: JSON.stringify(payload),
           });
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.error || "Erro ao salvar caderno");
           }
+          const data = await res.json();
           toast({ title: "Caderno salvo", description: "Dados gravados com sucesso." });
           queryClient.invalidateQueries({ queryKey: ["/api", "cadernos"] });
-          if (isNewCaderno) {
-            const data = await res.json();
-            if (data?.caderno?.id) {
-              setLocation(`/caderno/${data.caderno.id}/identificacao`);
-            } else {
-              setLocation("/dashboard");
-            }
+          if (isNewCaderno && data?.caderno?.id) {
+            setLocation(`/caderno/${data.caderno.id}/identificacao`);
           }
         } catch (err: any) {
           toast({ title: "Erro ao salvar caderno", description: err.message || "Tente novamente", variant: "destructive" });

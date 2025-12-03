@@ -8,7 +8,7 @@ import { generateEspPdf, generateCadernoPdf } from "../services/pdfService";
 import { generateEspDocx, generateCadernoDocx } from "../services/docxService";
 import { logger } from "../utils/logger";
 import { readGridFSFileToBuffer } from "../mongo";
-import { TipoArquivo } from "@shared/schema";
+import { TipoArquivo, CategoriaItem, SubcategoriaItem } from "@shared/schema";
 
 const router = Router();
 
@@ -62,24 +62,8 @@ router.post(
         }
       }
 
-      const [
-        constituintes,
-        acessorios,
-        acabamentos,
-        prototipos,
-        aplicacoes,
-        fichasRecebimento,
-        servicosIncluidosCatalog,
-      ] = await Promise.all([
-        storage.getConstituintes(),
-        storage.getAcessorios(),
-        storage.getAcabamentos(),
-        storage.getPrototiposComerciais(),
-        storage.getAplicacoes(),
-        storage.getFichasRecebimento(),
-        storage.getServicosIncluidos(),
-      ]);
-
+      // Catálogos derivam de itens_especificacao
+      const itensAtivos = await storage.getItensEspecificacao({ ativo: true });
       const toBullets = (values: string[]) =>
         values.filter(Boolean).map((value) => `• ${value}`).join("\n");
 
@@ -96,6 +80,28 @@ router.post(
           return toBullets(labels);
         };
       };
+
+      const constituintes = itensAtivos
+        .filter((i) => i.subcategoria === CategoriaItem.CONSTITUINTES)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const acessorios = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.ACESSORIOS)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const acabamentos = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.ACABAMENTOS)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const prototipos = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.PROTOTIPO_COMERCIAL)
+        .map((i) => ({ id: i.id, item: i.titulo, marca: "" }));
+      const aplicacoes = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.APLICACAO)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const fichasRecebimento = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.RECEBIMENTO)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const servicosIncluidosCatalog = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.SERVICOS_INCLUIDOS)
+        .map((i) => ({ id: i.id, nome: i.titulo, descricao: i.descricao ?? "" }));
 
       const pdfBuffer = await generateEspPdf(esp, {
         autor,
@@ -180,7 +186,69 @@ router.post(
         }
       }
 
-      const pdfBuffer = await generateCadernoPdf(caderno, { autor, images });
+      const itensAtivos = await storage.getItensEspecificacao({ ativo: true });
+
+      const toBullets = (values: string[]) =>
+        values.filter(Boolean).map((value) => `• ${value}`).join("\n");
+
+      const makeLookup = <T extends { id: string }>(
+        items: T[],
+        getLabel: (item: T) => string
+      ) => {
+        const map = new Map(items.map((item) => [item.id, getLabel(item)]));
+        return async (ids?: string[] | null) => {
+          if (!ids?.length) return "";
+          const labels = ids
+            .map((id) => map.get(id))
+            .filter(Boolean) as string[];
+          return toBullets(labels);
+        };
+      };
+
+      const constituintes = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.CONSTITUINTES)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const acessorios = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.ACESSORIOS)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const acabamentos = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.ACABAMENTOS)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const prototipos = itensAtivos
+        .filter((i) => i.subcategoria === SubcategoriaItem.PROTOTIPO_COMERCIAL)
+        .map((i) => ({ id: i.id, item: i.titulo, marca: "" }));
+      const aplicacoes = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.APLICACAO)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const fichasRecebimento = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.RECEBIMENTO)
+        .map((i) => ({ id: i.id, nome: i.titulo }));
+      const servicosIncluidosCatalog = itensAtivos
+        .filter((i) => i.categoria === CategoriaItem.SERVICOS_INCLUIDOS)
+        .map((i) => ({ id: i.id, nome: i.titulo, descricao: i.descricao ?? "" }));
+
+      const pdfBuffer = await generateCadernoPdf(caderno, {
+        autor,
+        images,
+        lookups: {
+          getConstituintesText: makeLookup(constituintes, (item) => item.nome),
+          getAcessoriosText: makeLookup(acessorios, (item) => item.nome),
+          getAcabamentosText: makeLookup(acabamentos, (item) => item.nome),
+          getPrototiposText: makeLookup(
+            prototipos,
+            (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
+          ),
+          getAplicacoesText: makeLookup(aplicacoes, (item) => item.nome),
+          getFichasRecebimentoText: makeLookup(
+            fichasRecebimento,
+            (item) => item.nome
+          ),
+          getServicosIncluidosText: makeLookup(
+            servicosIncluidosCatalog,
+            (item) => (item.descricao ? `${item.nome} - ${item.descricao}` : item.nome)
+          ),
+        },
+      });
 
       await storage.createLog({
         userId: req.user.id,

@@ -180,6 +180,24 @@ export class DatabaseStorage implements IStorage {
       id,
       titulo: insertCaderno.titulo,
       descricao: insertCaderno.descricao ?? null,
+      descricaoAplicacao: insertCaderno.descricaoAplicacao ?? null,
+      execucao: insertCaderno.execucao ?? null,
+      fichasReferencia: insertCaderno.fichasReferencia ?? null,
+      recebimento: insertCaderno.recebimento ?? null,
+      servicosIncluidos: insertCaderno.servicosIncluidos ?? null,
+      criteriosMedicao: insertCaderno.criteriosMedicao ?? null,
+      legislacao: insertCaderno.legislacao ?? null,
+      referencias: insertCaderno.referencias ?? null,
+      introduzirComponente: insertCaderno.introduzirComponente ?? null,
+      constituentesIds: insertCaderno.constituentesIds ?? null,
+      acessoriosIds: insertCaderno.acessoriosIds ?? null,
+      acabamentosIds: insertCaderno.acabamentosIds ?? null,
+      prototiposIds: insertCaderno.prototiposIds ?? null,
+      aplicacoesIds: insertCaderno.aplicacoesIds ?? null,
+      constituentesExecucaoIds: insertCaderno.constituintesExecucaoIds ?? null,
+      fichasReferenciaIds: insertCaderno.fichasReferenciaIds ?? null,
+      fichasRecebimentoIds: insertCaderno.fichasRecebimentoIds ?? null,
+      servicosIncluidosIds: insertCaderno.servicosIncluidosIds ?? null,
       status: (insertCaderno.status ?? StatusCaderno.EM_ANDAMENTO) as StatusCaderno,
       autorId: insertCaderno.autorId,
       createdAt: now,
@@ -193,9 +211,27 @@ export class DatabaseStorage implements IStorage {
     const updateData: any = { updatedAt: new Date() };
     if (updates.titulo !== undefined) updateData.titulo = updates.titulo;
     if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
+    if (updates.descricaoAplicacao !== undefined) updateData.descricaoAplicacao = updates.descricaoAplicacao;
+    if (updates.execucao !== undefined) updateData.execucao = updates.execucao;
+    if (updates.fichasReferencia !== undefined) updateData.fichasReferencia = updates.fichasReferencia;
+    if (updates.recebimento !== undefined) updateData.recebimento = updates.recebimento;
+    if (updates.servicosIncluidos !== undefined) updateData.servicosIncluidos = updates.servicosIncluidos;
+    if (updates.criteriosMedicao !== undefined) updateData.criteriosMedicao = updates.criteriosMedicao;
+    if (updates.legislacao !== undefined) updateData.legislacao = updates.legislacao;
+    if (updates.referencias !== undefined) updateData.referencias = updates.referencias;
+    if (updates.introduzirComponente !== undefined) updateData.introduzirComponente = updates.introduzirComponente;
+    if (updates.constituentesIds !== undefined) updateData.constituentesIds = updates.constituentesIds;
+    if (updates.acessoriosIds !== undefined) updateData.acessoriosIds = updates.acessoriosIds;
+    if (updates.acabamentosIds !== undefined) updateData.acabamentosIds = updates.acabamentosIds;
+    if (updates.prototiposIds !== undefined) updateData.prototiposIds = updates.prototiposIds;
+    if (updates.aplicacoesIds !== undefined) updateData.aplicacoesIds = updates.aplicacoesIds;
+    if (updates.constituintesExecucaoIds !== undefined) updateData.constituintesExecucaoIds = updates.constituintesExecucaoIds;
+    if (updates.fichasReferenciaIds !== undefined) updateData.fichasReferenciaIds = updates.fichasReferenciaIds;
+    if (updates.fichasRecebimentoIds !== undefined) updateData.fichasRecebimentoIds = updates.fichasRecebimentoIds;
+    if (updates.servicosIncluidosIds !== undefined) updateData.servicosIncluidosIds = updates.servicosIncluidosIds;
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.autorId !== undefined) updateData.autorId = updates.autorId;
-    
+
     await db.update(cadernos).set(updateData).where(eq(cadernos.id, id));
     return this.getCaderno(id);
   }
