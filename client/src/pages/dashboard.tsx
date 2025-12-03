@@ -13,6 +13,7 @@ import { CalendarIcon, FileText, Plus, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   // Filter states
@@ -115,6 +116,31 @@ export default function Dashboard() {
     }
   };
 
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const token = localStorage.getItem("esp_auth_token");
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        throw new Error("Falha ao exportar");
+      }
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err?.message || "Erro ao exportar");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AuthHeader
@@ -146,7 +172,7 @@ export default function Dashboard() {
             </Button>
           </Link>
           
-          <Link href="/esp/novo">
+          <Link href="/caderno/novo">
             <Button
               variant="default"
               className="gap-2 bg-institutional-blue hover:bg-institutional-blue/90"
@@ -318,9 +344,50 @@ export default function Dashboard() {
                         Autor: {caderno.autor?.nome} | Status: {caderno.status}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" data-testid={`button-view-caderno-${caderno.id}`}>
-                      Ver Detalhes
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/caderno/${caderno.id}/identificacao`}>
+                        <Button variant="outline" size="sm" data-testid={`button-edit-caderno-${caderno.id}`}>
+                          Editar
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-institutional-blue hover:bg-institutional-blue/90"
+                        data-testid={`button-export-caderno-${caderno.id}`}
+                        onClick={() =>
+                          handleDownload(
+                            `/api/export/pdf-caderno/${caderno.id}`,
+                            `${caderno.titulo || "caderno"}.pdf`
+                          )
+                        }
+                      >
+                        Exportar PDF
+                      </Button>
+                      {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-delete-caderno-${caderno.id}`}
+                          onClick={async () => {
+                            if (!confirm("Deseja excluir este caderno?")) return;
+                            const token = localStorage.getItem("esp_auth_token");
+                            const res = await fetch(`/api/cadernos/${caderno.id}`, {
+                              method: "DELETE",
+                              credentials: "include",
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (!res.ok) {
+                              alert("Erro ao excluir caderno");
+                            } else {
+                              queryClient.invalidateQueries({ queryKey: ["/api", "cadernos"] });
+                            }
+                          }}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -343,7 +410,7 @@ export default function Dashboard() {
               <p className="text-muted-foreground">
                 Comece criando sua primeira especificação
               </p>
-              <Link href="/esp/novo">
+              <Link href="/nova-esp">
                 <InstitutionalButton
                   variant="primary"
                   className="gap-2"
@@ -371,11 +438,50 @@ export default function Dashboard() {
                         Autor: {esp.autor?.nome}
                       </p>
                     </div>
-                    <Link href={`/esp/${esp.id}/identificacao`}>
-                      <Button variant="default" size="sm" data-testid={`button-edit-esp-${esp.id}`}>
-                        Editar
+                    <div className="flex items-center gap-2">
+                      <Link href={`/esp/${esp.id}/identificacao`}>
+                        <Button variant="default" size="sm" data-testid={`button-edit-esp-${esp.id}`}>
+                          Editar
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-institutional-blue hover:bg-institutional-blue/90"
+                        data-testid={`button-export-esp-${esp.id}`}
+                        onClick={() =>
+                          handleDownload(
+                            `/api/export/pdf/${esp.id}`,
+                            `${esp.codigo || "ESP"}.pdf`
+                          )
+                        }
+                      >
+                        Exportar PDF
                       </Button>
-                    </Link>
+                      {(user.perfil === "GERENTE" || user.perfil === "DIRETOR") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-delete-esp-${esp.id}`}
+                          onClick={async () => {
+                            if (!confirm("Deseja excluir esta ESP?")) return;
+                            const token = localStorage.getItem("esp_auth_token");
+                            const res = await fetch(`/api/esp/${esp.id}`, {
+                              method: "DELETE",
+                              credentials: "include",
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (!res.ok) {
+                              alert("Erro ao excluir ESP");
+                            } else {
+                              queryClient.invalidateQueries({ queryKey: ["/api/esp"] });
+                            }
+                          }}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

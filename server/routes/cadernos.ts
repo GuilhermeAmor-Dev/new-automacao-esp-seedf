@@ -13,12 +13,48 @@ const createCadernoSchema = z.object({
   titulo: z.string().min(3),
   descricao: z.string().optional(),
   status: z.nativeEnum(StatusCaderno).optional(),
+  descricaoAplicacao: z.string().optional(),
+  execucao: z.string().optional(),
+  fichasReferencia: z.string().optional(),
+  recebimento: z.string().optional(),
+  servicosIncluidos: z.string().optional(),
+  criteriosMedicao: z.string().optional(),
+  legislacao: z.string().optional(),
+  referencias: z.string().optional(),
+  introduzirComponente: z.string().optional(),
+  constituentesIds: z.array(z.string()).optional(),
+  acessoriosIds: z.array(z.string()).optional(),
+  acabamentosIds: z.array(z.string()).optional(),
+  prototiposIds: z.array(z.string()).optional(),
+  aplicacoesIds: z.array(z.string()).optional(),
+  constituentesExecucaoIds: z.array(z.string()).optional(),
+  fichasReferenciaIds: z.array(z.string()).optional(),
+  fichasRecebimentoIds: z.array(z.string()).optional(),
+  servicosIncluidosIds: z.array(z.string()).optional(),
 });
 
 const updateCadernoSchema = z.object({
   titulo: z.string().min(3).optional(),
   descricao: z.string().optional(),
   status: z.nativeEnum(StatusCaderno).optional(),
+  descricaoAplicacao: z.string().optional(),
+  execucao: z.string().optional(),
+  fichasReferencia: z.string().optional(),
+  recebimento: z.string().optional(),
+  servicosIncluidos: z.string().optional(),
+  criteriosMedicao: z.string().optional(),
+  legislacao: z.string().optional(),
+  referencias: z.string().optional(),
+  introduzirComponente: z.string().optional(),
+  constituentesIds: z.array(z.string()).optional(),
+  acessoriosIds: z.array(z.string()).optional(),
+  acabamentosIds: z.array(z.string()).optional(),
+  prototiposIds: z.array(z.string()).optional(),
+  aplicacoesIds: z.array(z.string()).optional(),
+  constituentesExecucaoIds: z.array(z.string()).optional(),
+  fichasReferenciaIds: z.array(z.string()).optional(),
+  fichasRecebimentoIds: z.array(z.string()).optional(),
+  servicosIncluidosIds: z.array(z.string()).optional(),
 });
 
 const paramsSchema = z.object({
@@ -111,6 +147,11 @@ router.patch(
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Não autenticado" });
+      }
+
+      // Se tentar alterar status, valida permissão de mudança de status
+      if (req.body.status && !Permissions.changeCadernoStatus.includes(req.user.perfil)) {
+        return res.status(403).json({ error: "Acesso negado", message: "Perfil não pode alterar status" });
       }
 
       const caderno = await storage.updateCaderno(req.params.id, req.body);

@@ -53,6 +53,25 @@ export const cadernos = pgTable("cadernos", {
   descricao: text("descricao"),
   status: text("status").notNull().$type<StatusCaderno>().default(StatusCaderno.EM_ANDAMENTO),
   autorId: varchar("autor_id", { length: 36 }).notNull().references(() => users.id),
+  // Campos de conteúdo (espelhando os de ESP para facilitar exportação)
+  descricaoAplicacao: text("descricao_aplicacao"),
+  execucao: text("execucao"),
+  fichasReferencia: text("fichas_referencia"),
+  recebimento: text("recebimento"),
+  servicosIncluidos: text("servicos_incluidos"),
+  criteriosMedicao: text("criterios_medicao"),
+  legislacao: text("legislacao"),
+  referencias: text("referencias"),
+  introduzirComponente: text("introduzir_componente"),
+  constituentesIds: text("constituintes_ids").array(),
+  acessoriosIds: text("acessorios_ids").array(),
+  acabamentosIds: text("acabamentos_ids").array(),
+  prototiposIds: text("prototipos_ids").array(),
+  aplicacoesIds: text("aplicacoes_ids").array(),
+  constituentesExecucaoIds: text("constituintes_execucao_ids").array(),
+  fichasReferenciaIds: text("fichas_referencia_ids").array(),
+  fichasRecebimentoIds: text("fichas_recebimento_ids").array(),
+  servicosIncluidosIds: text("servicos_incluidos_ids").array(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -191,7 +210,8 @@ export enum CategoriaItem {
   SERVICOS_INCLUIDOS = "SERVIÇOS INCLUÍDOS NOS PREÇOS",
   CRITERIOS_MEDICAO = "CRITÉRIOS DE MEDIÇÃO",
   LEGISLACAO = "LEGISLAÇÃO",
-  REFERENCIA = "REFERÊNCIA"
+  NORMAS = "NORMAS",
+  REFERENCIA = "REFERÊNCIA",
 }
 
 // Subcategorias (dependentes da categoria selecionada)
@@ -201,13 +221,13 @@ export enum SubcategoriaItem {
   ACABAMENTOS = "Acabamentos",
   CONSTITUINTES = "Constituintes",
   PROTOTIPO_COMERCIAL = "Protótipo Comercial",
+  SEM_SUBCATEGORIA = "Sem subcategoria",
   // Subcategorias para FICHA DE REFERÊNCIA
   CATALOGO_SERVICOS = "Catálogo de Serviços",
   // Subcategoria geral
-  TEXTO_GERAL = "Texto Geral"
+  TEXTO_GERAL = "Texto Geral",
 }
 
-// Itens e Especificações Técnicas
 export const itensEspecificacao = pgTable("itens_especificacao", {
   id: varchar("id", { length: 36 }).primaryKey(),
   titulo: text("titulo").notNull(),
@@ -297,7 +317,8 @@ export type Versao = typeof versoes.$inferSelect;
 // ArquivoMidia model
 export const arquivosMidia = pgTable("arquivos_midia", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  espId: varchar("esp_id", { length: 36 }).notNull().references(() => esps.id),
+  espId: varchar("esp_id", { length: 36 }).references(() => esps.id),
+  cadernoId: varchar("caderno_id", { length: 36 }).references(() => cadernos.id),
   tipo: text("tipo").notNull().$type<TipoArquivo>(),
   filename: text("filename").notNull(),
   contentType: text("content_type").notNull(),

@@ -42,6 +42,11 @@ function Router() {
           <EspEditor />
         </ProtectedRoute>
       </Route>
+      <Route path="/caderno/:id/:tab?">
+        <ProtectedRoute>
+          <EspEditor />
+        </ProtectedRoute>
+      </Route>
       <Route path="/criacao-itens">
         <ProtectedRoute>
           <CriacaoItens />

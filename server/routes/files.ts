@@ -5,6 +5,7 @@ import { TipoArquivo } from "@shared/schema";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { requireRole, Permissions } from "../middleware/rbac";
 import { logger } from "../utils/logger";
+import { uploadBufferToGridFS, getGridFSBucket, ObjectId, readGridFSFileToBuffer } from "../mongo";
 
 const router = Router();
 
@@ -54,16 +55,24 @@ router.post(
         return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
-      const { espId } = req.body;
-      if (!espId) {
-        logger.error("ESP ID missing from request body", { body: req.body });
-        return res.status(400).json({ error: "ESP ID é obrigatório" });
+      const { espId, cadernoId } = req.body;
+      if (!espId && !cadernoId) {
+        logger.error("Owner missing from request body", { body: req.body });
+        return res.status(400).json({ error: "Informe espId ou cadernoId" });
       }
 
-      // Verify ESP exists
-      const esp = await storage.getEsp(espId);
-      if (!esp) {
-        return res.status(404).json({ error: "ESP não encontrada" });
+      if (espId) {
+        const esp = await storage.getEsp(espId);
+        if (!esp) {
+          return res.status(404).json({ error: "ESP não encontrada" });
+        }
+      }
+
+      if (!espId && cadernoId) {
+        const caderno = await storage.getCaderno(cadernoId);
+        if (!caderno) {
+          return res.status(404).json({ error: "Caderno não encontrado" });
+        }
       }
 
       const uploadedFiles = [];
@@ -79,12 +88,23 @@ router.post(
           tipo = TipoArquivo.DOCX;
         }
 
-        // Convert file buffer to base64 for database storage
-        const fileData = file.buffer.toString('base64');
+        let fileData: string;
+        let bucket = "esp_files";
+
+        if (file.mimetype.startsWith("image/")) {
+          bucket = "esp_images";
+        } else if (file.mimetype === "application/pdf" || file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+          bucket = "esp_docs";
+        }
+
+        // Save to GridFS with bucket and keep pointer
+        const mongoId = await uploadBufferToGridFS(file.originalname, file.mimetype, file.buffer, bucket);
+        fileData = `mongo:${bucket}:${mongoId.toString()}`;
 
         // Save file to database
         const arquivoMidia = await storage.createArquivoMidia({
-          espId,
+          espId: espId || null,
+          cadernoId: espId ? null : cadernoId,
           tipo,
           filename: file.originalname,
           contentType: file.mimetype,
@@ -99,14 +119,15 @@ router.post(
         await storage.createLog({
           userId: req.user.id,
           acao: "UPLOAD_ARQUIVO",
-          alvo: espId,
-          detalhes: `Arquivo "${file.originalname}" enviado para ESP`,
+          alvo: espId || cadernoId,
+          detalhes: `Arquivo "${file.originalname}" enviado para ${espId ? "ESP" : "Caderno"}`,
         });
       }
 
       logger.info("Files uploaded", { 
         count: uploadedFiles.length, 
         espId, 
+        cadernoId,
         userId: req.user.id 
       });
 
@@ -137,10 +158,10 @@ router.use((error: any, req: any, res: any, next: any) => {
   next();
 });
 
-// GET /api/esp/:espId/files - List files for an ESP
+// GET /api/esp/:espId/files - List files for an ESP or Caderno (owner)
 router.get("/:espId/files", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const files = await storage.getArquivosMidiaByEsp(req.params.espId);
+    const files = await storage.getArquivosMidiaByOwner(req.params.espId);
     
     // Don't return fileData in list (too large)
     const filesResponse = files.map(({ fileData, ...file }) => file);
@@ -161,13 +182,26 @@ router.get("/:id/download", authenticateToken, async (req: AuthRequest, res) => 
       return res.status(404).json({ error: "Arquivo não encontrado" });
     }
 
-    // Convert base64 back to buffer
-    const fileBuffer = Buffer.from(arquivo.fileData, 'base64');
+    if (arquivo.fileData.startsWith("mongo:")) {
+      const parts = arquivo.fileData.split(":");
+      const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+      const objectId = parts.length === 3 ? parts[2] : parts[1];
 
-    res.setHeader("Content-Type", arquivo.contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
-    res.setHeader("Content-Length", fileBuffer.length);
-    res.send(fileBuffer);
+      res.setHeader("Content-Type", arquivo.contentType);
+      res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
+      const bucket = await getGridFSBucket(bucketName);
+      const downloadStream = bucket.openDownloadStream(new ObjectId(objectId));
+      downloadStream.on("error", () => res.status(404).json({ error: "Arquivo não encontrado" }));
+      downloadStream.pipe(res);
+    } else {
+      // Convert base64 back to buffer
+      const fileBuffer = Buffer.from(arquivo.fileData, "base64");
+
+      res.setHeader("Content-Type", arquivo.contentType);
+      res.setHeader("Content-Disposition", `attachment; filename="${arquivo.filename}"`);
+      res.setHeader("Content-Length", fileBuffer.length);
+      res.send(fileBuffer);
+    }
   } catch (error) {
     logger.error("Error downloading file", { error });
     res.status(500).json({ error: "Erro ao baixar arquivo" });
@@ -183,12 +217,23 @@ router.get("/:id/stream", authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: "Arquivo não encontrado" });
     }
 
-    // Convert base64 back to buffer
-    const fileBuffer = Buffer.from(arquivo.fileData, 'base64');
+    if (arquivo.fileData.startsWith("mongo:")) {
+      const parts = arquivo.fileData.split(":");
+      const bucketName = parts.length === 3 ? parts[1] : "esp_files";
+      const objectId = parts.length === 3 ? parts[2] : parts[1];
 
-    res.setHeader("Content-Type", arquivo.contentType);
-    res.setHeader("Content-Length", fileBuffer.length);
-    res.send(fileBuffer);
+      res.setHeader("Content-Type", arquivo.contentType);
+      const bucket = await getGridFSBucket(bucketName);
+      const downloadStream = bucket.openDownloadStream(new ObjectId(objectId));
+      downloadStream.on("error", () => res.status(404).json({ error: "Arquivo não encontrado" }));
+      downloadStream.pipe(res);
+    } else {
+      const fileBuffer = Buffer.from(arquivo.fileData, "base64");
+
+      res.setHeader("Content-Type", arquivo.contentType);
+      res.setHeader("Content-Length", fileBuffer.length);
+      res.send(fileBuffer);
+    }
   } catch (error) {
     logger.error("Error streaming file", { error });
     res.status(500).json({ error: "Erro ao carregar arquivo" });
@@ -217,7 +262,7 @@ router.delete("/:id", authenticateToken, requireRole(...Permissions.createEsp), 
     await storage.createLog({
       userId: req.user.id,
       acao: "DELETE_ARQUIVO",
-      alvo: arquivo.espId,
+      alvo: arquivo.espId || arquivo.cadernoId || arquivo.id,
       detalhes: `Arquivo "${arquivo.filename}" deletado`,
     });
 
