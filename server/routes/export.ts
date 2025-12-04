@@ -41,11 +41,10 @@ router.post(
         return res.status(404).json({ error: "Autor não encontrado" });
       }
 
-      // Buscar arquivos de projeto (imagens)
-      const files = await storage.getArquivosMidiaByEsp(esp.id);
+      // Imagens da ESP e dos cadernos associados
       const images: { filename: string; buffer: Buffer }[] = [];
-      for (const file of files) {
-        if (file.tipo !== TipoArquivo.IMAGEM) continue;
+      const pushFile = async (file: any, labelPrefix?: string) => {
+        if (file.tipo !== TipoArquivo.IMAGEM) return;
         try {
           let buffer: Buffer;
           if (file.fileData.startsWith("mongo:")) {
@@ -56,16 +55,25 @@ router.post(
           } else {
             buffer = Buffer.from(file.fileData, "base64");
           }
-          images.push({ filename: file.filename, buffer });
+          images.push({ filename: labelPrefix ? `${labelPrefix} - ${file.filename}` : file.filename, buffer });
         } catch (err) {
           logger.error("Error loading image for PDF", { fileId: file.id, err });
         }
+      };
+
+      const espFiles = await storage.getArquivosMidiaByEsp(esp.id);
+      for (const file of espFiles) await pushFile(file);
+
+      const cadernosAssociados = esp.cadernosIds?.length ? await storage.getCadernosByIds(esp.cadernosIds) : [];
+      for (const cad of cadernosAssociados) {
+        const cadFiles = await storage.getArquivosMidiaByCaderno(cad.id);
+        for (const file of cadFiles) await pushFile(file, `Caderno ${cad.titulo}`);
       }
 
-      // Catálogos derivam de itens_especificacao
+      // Catálogos (itens_especificacao ativos)
       const itensAtivos = await storage.getItensEspecificacao({ ativo: true });
       const toBullets = (values: string[]) =>
-        values.filter(Boolean).map((value) => `• ${value}`).join("\n");
+        values.filter(Boolean).map((value) => `* ${value}`).join("\n");
 
       const makeLookup = <T extends { id: string }>(
         items: T[],
@@ -103,7 +111,78 @@ router.post(
         .filter((i) => i.categoria === CategoriaItem.SERVICOS_INCLUIDOS)
         .map((i) => ({ id: i.id, nome: i.titulo, descricao: i.descricao ?? "" }));
 
-      const pdfBuffer = await generateEspPdf(esp, {
+      const resolveIds = async (
+        ids: string[] | null | undefined,
+        resolver: (ids?: string[] | null) => Promise<string>
+      ) => {
+        if (!ids?.length) return "";
+        return resolver(ids);
+      };
+
+      const sectionText = async (
+        espValue: string | null | undefined,
+        field: keyof typeof esp,
+        resolver?: (ids?: string[] | null) => Promise<string>
+      ) => {
+        const parts: string[] = [];
+        if (espValue && String(espValue).trim()) {
+          parts.push(`ESP:\n${espValue}`);
+        }
+        for (const cad of cadernosAssociados) {
+          const raw = (cad as any)[field];
+          if (resolver) {
+            const resolved = await resolveIds(raw, resolver);
+            if (resolved) {
+              parts.push(`Caderno ${cad.titulo}:\n${resolved}`);
+            }
+          } else if (raw && String(raw).trim()) {
+            parts.push(`Caderno ${cad.titulo}:\n${raw}`);
+          }
+        }
+        return parts.join("\n\n---\n\n");
+      };
+
+      const espCombinada = {
+        ...esp,
+        descricaoAplicacao: await sectionText(esp.descricaoAplicacao, "descricaoAplicacao"),
+        execucao: await sectionText(esp.execucao, "execucao"),
+        fichasReferencia: await sectionText(esp.fichasReferencia, "fichasReferencia"),
+        recebimento: await sectionText(esp.recebimento, "recebimento"),
+        servicosIncluidos: await sectionText(esp.servicosIncluidos, "servicosIncluidos"),
+        criteriosMedicao: await sectionText(esp.criteriosMedicao, "criteriosMedicao"),
+        legislacao: await sectionText(esp.legislacao, "legislacao"),
+        referencias: await sectionText(esp.referencias, "referencias"),
+      };
+
+      const constituinteTexto = await sectionText("", "constituentesIds", makeLookup(constituintes, (i) => i.nome));
+      const acessorioTexto = await sectionText("", "acessoriosIds", makeLookup(acessorios, (i) => i.nome));
+      const acabamentoTexto = await sectionText("", "acabamentosIds", makeLookup(acabamentos, (i) => i.nome));
+      const prototipoTexto = await sectionText("", "prototiposIds", makeLookup(
+        prototipos,
+        (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
+      ));
+      const aplicacaoTexto = await sectionText("", "aplicacoesIds", makeLookup(aplicacoes, (i) => i.nome));
+      const execConstTexto = await sectionText("", "constituentesExecucaoIds", makeLookup(constituintes, (i) => i.nome));
+      const fichasRefTexto = await sectionText("", "fichasReferenciaIds", makeLookup(fichasRecebimento, (i) => i.nome));
+      const fichasRecebTexto = await sectionText("", "fichasRecebimentoIds", makeLookup(fichasRecebimento, (i) => i.nome));
+      const servicosInclTexto = await sectionText("", "servicosIncluidosIds", makeLookup(servicosIncluidosCatalog, (i) => (i.descricao ? `${i.nome} - ${i.descricao}` : i.nome)));
+
+      const append = (base: string, extra: string, label: string) => {
+        if (!extra) return base;
+        return [base, `${label}\n${extra}`].filter(Boolean).join("\n\n---\n\n");
+      };
+
+      espCombinada.descricaoAplicacao = append(espCombinada.descricaoAplicacao, constituinteTexto, "Constituintes");
+      espCombinada.descricaoAplicacao = append(espCombinada.descricaoAplicacao, acessorioTexto, "Acessórios");
+      espCombinada.descricaoAplicacao = append(espCombinada.descricaoAplicacao, acabamentoTexto, "Acabamentos");
+      espCombinada.descricaoAplicacao = append(espCombinada.descricaoAplicacao, prototipoTexto, "Protótipo Comercial");
+      espCombinada.descricaoAplicacao = append(espCombinada.descricaoAplicacao, aplicacaoTexto, "Aplicação");
+      espCombinada.execucao = append(espCombinada.execucao, execConstTexto, "Constituintes (Execução)");
+      espCombinada.fichasReferencia = append(espCombinada.fichasReferencia, fichasRefTexto, "Fichas de Referência");
+      espCombinada.recebimento = append(espCombinada.recebimento, fichasRecebTexto, "Fichas de Recebimento");
+      espCombinada.servicosIncluidos = append(espCombinada.servicosIncluidos, servicosInclTexto, "Serviços Incluídos (Lista)");
+
+      const pdfBuffer = await generateEspPdf(espCombinada, {
         autor,
         images,
         getConstituintesText: makeLookup(constituintes, (item) => item.nome),

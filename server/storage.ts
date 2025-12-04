@@ -46,7 +46,7 @@ import {
   itensEspecificacao,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -156,6 +156,11 @@ export class DatabaseStorage implements IStorage {
   async getCaderno(id: string): Promise<Caderno | undefined> {
     const result = await db.select().from(cadernos).where(eq(cadernos.id, id)).limit(1);
     return result[0];
+  }
+
+  async getCadernosByIds(ids: string[]): Promise<Caderno[]> {
+    if (!ids?.length) return [];
+    return await db.select().from(cadernos).where(inArray(cadernos.id, ids));
   }
 
   async getCadernos(filters?: { status?: StatusCaderno; autorId?: string }): Promise<Caderno[]> {
