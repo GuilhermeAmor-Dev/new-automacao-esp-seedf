@@ -5,6 +5,13 @@ import { SubcategoriaItem, CategoriaItem } from "@shared/schema";
 
 const router = Router();
 
+const stripHtml = (value?: string | null) =>
+  (value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 // GET /api/catalog/constituintes - List all constituintes from itens_especificacao
 router.get("/constituintes", authenticateToken, async (req: AuthRequest, res) => {
   try {
@@ -14,7 +21,8 @@ router.get("/constituintes", authenticateToken, async (req: AuthRequest, res) =>
       .map(item => ({
         id: item.id,
         nome: item.titulo,
-        descricao: item.descricao,
+        titulo: item.titulo,
+        descricao: stripHtml(item.descricao),
       }));
     res.json({ constituintes });
   } catch (error) {
@@ -31,7 +39,8 @@ router.get("/acessorios", authenticateToken, async (req: AuthRequest, res) => {
       .map(item => ({
         id: item.id,
         nome: item.titulo,
-        descricao: item.descricao,
+        titulo: item.titulo,
+        descricao: stripHtml(item.descricao),
       }));
     res.json({ acessorios });
   } catch (error) {
@@ -48,7 +57,8 @@ router.get("/acabamentos", authenticateToken, async (req: AuthRequest, res) => {
       .map(item => ({
         id: item.id,
         nome: item.titulo,
-        descricao: item.descricao,
+        titulo: item.titulo,
+        descricao: stripHtml(item.descricao),
       }));
     res.json({ acabamentos });
   } catch (error) {
@@ -65,7 +75,8 @@ router.get("/prototipos", authenticateToken, async (req: AuthRequest, res) => {
       .map(item => ({
         id: item.id,
         nome: item.titulo,
-        descricao: item.descricao,
+        titulo: item.titulo,
+        descricao: stripHtml(item.descricao),
       }));
     res.json({ prototipos });
   } catch (error) {
@@ -83,7 +94,8 @@ router.get("/aplicacoes", authenticateToken, async (req: AuthRequest, res) => {
     const aplicacoes = itens.map(item => ({
       id: item.id,
       nome: item.titulo,
-      descricao: item.descricao,
+      titulo: item.titulo,
+      descricao: stripHtml(item.descricao),
     }));
     res.json({ aplicacoes });
   } catch (error) {
@@ -101,7 +113,8 @@ router.get("/fichas-recebimento", authenticateToken, async (req: AuthRequest, re
     const fichasRecebimento = itens.map(item => ({
       id: item.id,
       nome: item.titulo,
-      descricao: item.descricao,
+      titulo: item.titulo,
+      descricao: stripHtml(item.descricao),
     }));
     res.json({ fichasRecebimento });
   } catch (error) {
@@ -119,7 +132,8 @@ router.get("/servicos-incluidos", authenticateToken, async (req: AuthRequest, re
     const servicosIncluidos = itens.map(item => ({
       id: item.id,
       nome: item.titulo,
-      descricao: item.descricao,
+      titulo: item.titulo,
+      descricao: stripHtml(item.descricao),
     }));
     res.json({ servicosIncluidos });
   } catch (error) {

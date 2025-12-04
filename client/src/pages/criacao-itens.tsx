@@ -207,7 +207,15 @@ export default function CriacaoItens() {
         title: "Sucesso",
         description: "Item técnico criado com sucesso!",
       });
+      // Invalida todos os catálogos usados nas telas de caderno/ESP
       queryClient.invalidateQueries({ queryKey: ["/api/itens-especificacao"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/constituintes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/acessorios"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/acabamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/prototipos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/aplicacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/fichas-recebimento"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/catalog/servicos-incluidos"] });
       form.reset({
         titulo: "",
         categoria: CategoriaItem.DESCRICAO,

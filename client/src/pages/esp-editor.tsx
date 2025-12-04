@@ -41,7 +41,7 @@ import { ptBR } from "date-fns/locale";
 
 import { cn } from "@/lib/utils";
 
-import { Selo } from "@shared/schema";
+import { Selo, CategoriaItem } from "@shared/schema";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -732,6 +732,11 @@ export default function EspEditor() {
 
 
   const handleSave = () => {
+    // Sincroniza campos textuais com as seleções (usamos descrição como valor salvo)
+    form.setValue("legislacao", legislacoesSelecionadas.filter(Boolean).join("\n"));
+    form.setValue("referencias", referenciasSelecionadas.filter(Boolean).join("\n"));
+    form.setValue("normas", normasSelecionadas.filter(Boolean).join("\n"));
+
     if (isCadernoMode) {
       const titulo = form.getValues("titulo");
       if (!titulo) {
@@ -3617,7 +3622,7 @@ export default function EspEditor() {
                   </div>
                   <div className="space-y-2">
                     {legislacoesSelecionadas.map((val, idx) => {
-                      const optionsLeg = todosItensData?.itens?.filter((i: any) => i.categoria === "LEGISLAÇÃO") || [];
+                      const optionsLeg = todosItensData?.itens?.filter((i: any) => i.categoria === CategoriaItem.LEGISLACAO) || [];
                       return (
                         <div key={`leg-${idx}`} className="flex items-center gap-2">
                           <Select
@@ -3633,7 +3638,7 @@ export default function EspEditor() {
                             </SelectTrigger>
                             <SelectContent>
                               {optionsLeg.map((item: any) => (
-                                <SelectItem key={item.id} value={item.titulo || item.nome}>
+                                <SelectItem key={item.id} value={item.descricao || item.titulo || item.nome}>
                                   {item.titulo || item.nome}
                                 </SelectItem>
                               ))}
@@ -3665,7 +3670,7 @@ export default function EspEditor() {
                   </div>
                   <div className="space-y-2">
                     {referenciasSelecionadas.map((val, idx) => {
-                      const optionsRef = todosItensData?.itens?.filter((i: any) => i.categoria === "REFERÊNCIA") || [];
+                      const optionsRef = todosItensData?.itens?.filter((i: any) => i.categoria === CategoriaItem.REFERENCIA) || [];
                       return (
                         <div key={`ref-${idx}`} className="flex items-center gap-2">
                           <Select
@@ -3681,7 +3686,7 @@ export default function EspEditor() {
                             </SelectTrigger>
                             <SelectContent>
                               {optionsRef.map((item: any) => (
-                                <SelectItem key={item.id} value={item.titulo || item.nome}>
+                                <SelectItem key={item.id} value={item.descricao || item.titulo || item.nome}>
                                   {item.titulo || item.nome}
                                 </SelectItem>
                               ))}
@@ -3713,7 +3718,7 @@ export default function EspEditor() {
                   </div>
                   <div className="space-y-2">
                     {normasSelecionadas.map((val, idx) => {
-                      const optionsNorma = todosItensData?.itens?.filter((i: any) => i.categoria === "NORMAS") || [];
+                      const optionsNorma = todosItensData?.itens?.filter((i: any) => i.categoria === CategoriaItem.NORMAS) || [];
                       return (
                         <div key={`norma-${idx}`} className="flex items-center gap-2">
                           <Select
@@ -3729,7 +3734,7 @@ export default function EspEditor() {
                             </SelectTrigger>
                             <SelectContent>
                               {optionsNorma.map((item: any) => (
-                                <SelectItem key={item.id} value={item.titulo || item.nome}>
+                                <SelectItem key={item.id} value={item.descricao || item.titulo || item.nome}>
                                   {item.titulo || item.nome}
                                 </SelectItem>
                               ))}

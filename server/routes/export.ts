@@ -19,6 +19,13 @@ const cadernoParamsSchema = z.object({
   cadernoId: z.string(),
 });
 
+const stripHtml = (value?: string | null) =>
+  (value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 // POST /api/export/pdf/:espId
 router.post(
   "/pdf/:espId",
@@ -70,10 +77,14 @@ router.post(
         for (const file of cadFiles) await pushFile(file, `Caderno ${cad.titulo}`);
       }
 
-      // Catálogos (itens_especificacao ativos)
+      // Catálogos (itens_especificacao ativos) - usamos a descrição para o PDF
       const itensAtivos = await storage.getItensEspecificacao({ ativo: true });
       const toBullets = (values: string[]) =>
-        values.filter(Boolean).map((value) => `* ${value}`).join("\n");
+        values
+          .map(stripHtml)
+          .filter(Boolean)
+          .map((value) => `* ${value}`)
+          .join("\n");
 
       const makeLookup = <T extends { id: string }>(
         items: T[],
@@ -91,22 +102,27 @@ router.post(
 
       const constituintes = itensAtivos
         .filter((i) => i.subcategoria === CategoriaItem.CONSTITUINTES)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const acessorios = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.ACESSORIOS)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const acabamentos = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.ACABAMENTOS)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const prototipos = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.PROTOTIPO_COMERCIAL)
-        .map((i) => ({ id: i.id, item: i.titulo, marca: "" }));
+        .map((i) => ({
+          id: i.id,
+          label: i.descricao || i.titulo,
+          item: i.titulo,
+          marca: "",
+        }));
       const aplicacoes = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.APLICACAO)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const fichasRecebimento = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.RECEBIMENTO)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const servicosIncluidosCatalog = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.SERVICOS_INCLUIDOS)
         .map((i) => ({ id: i.id, nome: i.titulo, descricao: i.descricao ?? "" }));
@@ -154,17 +170,17 @@ router.post(
         referencias: await sectionText(esp.referencias, "referencias"),
       };
 
-      const constituinteTexto = await sectionText("", "constituentesIds", makeLookup(constituintes, (i) => i.nome));
-      const acessorioTexto = await sectionText("", "acessoriosIds", makeLookup(acessorios, (i) => i.nome));
-      const acabamentoTexto = await sectionText("", "acabamentosIds", makeLookup(acabamentos, (i) => i.nome));
+      const constituinteTexto = await sectionText("", "constituentesIds", makeLookup(constituintes, (i) => i.label));
+      const acessorioTexto = await sectionText("", "acessoriosIds", makeLookup(acessorios, (i) => i.label));
+      const acabamentoTexto = await sectionText("", "acabamentosIds", makeLookup(acabamentos, (i) => i.label));
       const prototipoTexto = await sectionText("", "prototiposIds", makeLookup(
         prototipos,
         (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
       ));
-      const aplicacaoTexto = await sectionText("", "aplicacoesIds", makeLookup(aplicacoes, (i) => i.nome));
-      const execConstTexto = await sectionText("", "constituentesExecucaoIds", makeLookup(constituintes, (i) => i.nome));
-      const fichasRefTexto = await sectionText("", "fichasReferenciaIds", makeLookup(fichasRecebimento, (i) => i.nome));
-      const fichasRecebTexto = await sectionText("", "fichasRecebimentoIds", makeLookup(fichasRecebimento, (i) => i.nome));
+      const aplicacaoTexto = await sectionText("", "aplicacoesIds", makeLookup(aplicacoes, (i) => i.label));
+      const execConstTexto = await sectionText("", "constituentesExecucaoIds", makeLookup(constituintes, (i) => i.label));
+      const fichasRefTexto = await sectionText("", "fichasReferenciaIds", makeLookup(fichasRecebimento, (i) => i.label));
+      const fichasRecebTexto = await sectionText("", "fichasRecebimentoIds", makeLookup(fichasRecebimento, (i) => i.label));
       const servicosInclTexto = await sectionText("", "servicosIncluidosIds", makeLookup(servicosIncluidosCatalog, (i) => (i.descricao ? `${i.nome} - ${i.descricao}` : i.nome)));
 
       const append = (base: string, extra: string, label: string) => {
@@ -185,17 +201,17 @@ router.post(
       const pdfBuffer = await generateEspPdf(espCombinada, {
         autor,
         images,
-        getConstituintesText: makeLookup(constituintes, (item) => item.nome),
-        getAcessoriosText: makeLookup(acessorios, (item) => item.nome),
-        getAcabamentosText: makeLookup(acabamentos, (item) => item.nome),
+        getConstituintesText: makeLookup(constituintes, (item) => item.label),
+        getAcessoriosText: makeLookup(acessorios, (item) => item.label),
+        getAcabamentosText: makeLookup(acabamentos, (item) => item.label),
         getPrototiposText: makeLookup(
           prototipos,
-          (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
+          (item) => (item.label ? item.label : item.item)
         ),
-        getAplicacoesText: makeLookup(aplicacoes, (item) => item.nome),
+        getAplicacoesText: makeLookup(aplicacoes, (item) => item.label),
         getFichasRecebimentoText: makeLookup(
           fichasRecebimento,
-          (item) => item.nome
+          (item) => item.label
         ),
         getServicosIncluidosText: makeLookup(
           servicosIncluidosCatalog,
@@ -268,7 +284,11 @@ router.post(
       const itensAtivos = await storage.getItensEspecificacao({ ativo: true });
 
       const toBullets = (values: string[]) =>
-        values.filter(Boolean).map((value) => `• ${value}`).join("\n");
+        values
+          .map(stripHtml)
+          .filter(Boolean)
+          .map((value) => `* ${value}`)
+          .join("\n");
 
       const makeLookup = <T extends { id: string }>(
         items: T[],
@@ -286,45 +306,45 @@ router.post(
 
       const constituintes = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.CONSTITUINTES)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const acessorios = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.ACESSORIOS)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const acabamentos = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.ACABAMENTOS)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const prototipos = itensAtivos
         .filter((i) => i.subcategoria === SubcategoriaItem.PROTOTIPO_COMERCIAL)
-        .map((i) => ({ id: i.id, item: i.titulo, marca: "" }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo, item: i.titulo, marca: "" }));
       const aplicacoes = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.APLICACAO)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const fichasRecebimento = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.RECEBIMENTO)
-        .map((i) => ({ id: i.id, nome: i.titulo }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
       const servicosIncluidosCatalog = itensAtivos
         .filter((i) => i.categoria === CategoriaItem.SERVICOS_INCLUIDOS)
-        .map((i) => ({ id: i.id, nome: i.titulo, descricao: i.descricao ?? "" }));
+        .map((i) => ({ id: i.id, label: i.descricao || i.titulo }));
 
       const pdfBuffer = await generateCadernoPdf(caderno, {
         autor,
         images,
         lookups: {
-          getConstituintesText: makeLookup(constituintes, (item) => item.nome),
-          getAcessoriosText: makeLookup(acessorios, (item) => item.nome),
-          getAcabamentosText: makeLookup(acabamentos, (item) => item.nome),
+          getConstituintesText: makeLookup(constituintes, (item) => item.label),
+          getAcessoriosText: makeLookup(acessorios, (item) => item.label),
+          getAcabamentosText: makeLookup(acabamentos, (item) => item.label),
           getPrototiposText: makeLookup(
             prototipos,
-            (item) => (item.marca ? `${item.item} (${item.marca})` : item.item)
+            (item) => (item.marca ? `${item.item} (${item.marca})` : item.label || item.item)
           ),
-          getAplicacoesText: makeLookup(aplicacoes, (item) => item.nome),
+          getAplicacoesText: makeLookup(aplicacoes, (item) => item.label),
           getFichasRecebimentoText: makeLookup(
             fichasRecebimento,
-            (item) => item.nome
+            (item) => item.label
           ),
           getServicosIncluidosText: makeLookup(
             servicosIncluidosCatalog,
-            (item) => (item.descricao ? `${item.nome} - ${item.descricao}` : item.nome)
+            (item) => item.label
           ),
         },
       });
