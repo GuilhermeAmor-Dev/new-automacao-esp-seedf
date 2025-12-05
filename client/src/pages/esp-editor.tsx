@@ -42,6 +42,8 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 import { Selo, CategoriaItem } from "@shared/schema";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -77,6 +79,26 @@ const tabs = [
 
 ];
 
+
+
+const InfoHint = ({ text }: { text: string }) => (
+  <TooltipProvider delayDuration={0}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-4 w-4 items-center justify-center text-sky-800"
+          aria-label="Ajuda"
+        >
+          <Info className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 
 const espFormSchema = z.object({
@@ -2175,11 +2197,12 @@ export default function EspEditor() {
 
                   <div>
 
-                    <Label htmlFor="introduzir-componente" className="text-black">
-
-                      Introduzir componente
-
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="introduzir-componente" className="text-black">
+                        Introduzir componente
+                      </Label>
+                      <InfoHint text="Lorem ipsum dolor sit amet." />
+                    </div>
 
                     <Input
 
@@ -2205,11 +2228,12 @@ export default function EspEditor() {
 
                   <div>
 
-                    <Label htmlFor="constituintes" className="text-black">
-
-                      Constituintes
-
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="constituintes" className="text-black">
+                        Constituintes
+                      </Label>
+                      <InfoHint text="Lorem ipsum dolor sit amet." />
+                    </div>
 
                     <Select
 
@@ -2655,11 +2679,12 @@ export default function EspEditor() {
 
                 <div className="flex-1 overflow-auto max-w-4xl space-y-6 pr-4">
 
-                  <p className="text-sm text-muted-foreground mb-4">
-
+        <div className="flex items-start gap-2 text-sm text-muted-foreground mb-4">
+                    <p className="flex-1">
                     Selecione os itens de controle técnico da execução. Use o botão "+" para adicionar mais constituintes.
-
-                  </p>
+                    </p>
+                    <InfoHint text="Lorem ipsum dolor sit amet." />
+                </div>
 
 
 
@@ -3614,8 +3639,11 @@ export default function EspEditor() {
                 <h1 className="text-2xl font-bold">Legislação e Referências</h1>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Legislação</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold">Legislação</Label>
+                      <InfoHint text="Lorem ipsum dolor sit amet." />
+                    </div>
                     <Button variant="outline" size="sm" onClick={() => setLegislacoesSelecionadas([...legislacoesSelecionadas, ""])}>
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>
@@ -3662,8 +3690,11 @@ export default function EspEditor() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Referências</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold">Referências</Label>
+                      <InfoHint text="Lorem ipsum dolor sit amet." />
+                    </div>
                     <Button variant="outline" size="sm" onClick={() => setReferenciasSelecionadas([...referenciasSelecionadas, ""])}>
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>
@@ -3710,8 +3741,11 @@ export default function EspEditor() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Normas</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold">Normas</Label>
+                      <InfoHint text="Lorem ipsum dolor sit amet." />
+                    </div>
                     <Button variant="outline" size="sm" onClick={() => setNormasSelecionadas([...normasSelecionadas, ""])}>
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>

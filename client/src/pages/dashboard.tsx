@@ -9,11 +9,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, FileText, Plus, History } from "lucide-react";
+import { CalendarIcon, FileText, Plus, History, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const InfoHint = ({ text }: { text: string }) => (
+  <TooltipProvider delayDuration={0}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-4 w-4 items-center justify-center text-sky-800"
+          aria-label="Ajuda"
+        >
+          <Info className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 export default function Dashboard() {
   // Filter states
@@ -197,7 +217,10 @@ export default function Dashboard() {
 
         {/* Filters Section */}
         <div className="bg-card border rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Filtros de Busca</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Filtros de Busca</h2>
+            <InfoHint text="Lorem ipsum dolor sit amet." />
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
